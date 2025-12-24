@@ -621,7 +621,7 @@ const Admin: React.FC = () => {
                   {filteredQuestions.map(q => {
                     const styles = getLevelStyles(q.level);
                     return (
-                      <div key={q.id} className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 p-6 lg:px-12 lg:py-10 items-start lg:items-center hover:bg-slate-50/50 transition-all group animate-in slide-in-from-left-2 duration-300">
+                      <div key={q.id} className="relative flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 p-6 lg:px-12 lg:py-10 items-start lg:items-center hover:bg-slate-50/50 transition-all group animate-in slide-in-from-left-2 duration-300">
                         
                         {/* Mobile Top Row: Checkbox + Level + ID */}
                         <div className="col-span-2 flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
