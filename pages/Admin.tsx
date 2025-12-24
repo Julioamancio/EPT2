@@ -83,12 +83,37 @@ const Admin: React.FC = () => {
     }
   };
 
+  const persistQuestions = async (updatedQuestions: Question[], silentSuccess = false) => {
+    // 1. Save to LocalStorage (Always works)
+    storageService.saveQuestions(updatedQuestions);
+
+    // 2. Try to Save to Script (File System)
+    const ok = await storageService.saveQuestionsToScript(updatedQuestions);
+    
+    if (ok) {
+      if (!silentSuccess) alert('SUCESSO!\nArquivo "questions.json" atualizado.\nAgora faça o COMMIT e PUSH para o GitHub.');
+    } else {
+      // Fallback for Vercel/Production
+      const confirmed = window.confirm('ATENÇÃO (MODO ONLINE/VERCEL):\n\nO site não consegue escrever no arquivo "questions.json" automaticamente neste ambiente.\n\nDeseja BAIXAR o arquivo atualizado para fazer o upload manual?\n\n(Isso é necessário para que as alterações não se percam)');
+      
+      if (confirmed) {
+        const data = JSON.stringify(updatedQuestions, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'questions.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }
+  };
+
   const handleDeleteQuestion = (id: string) => {
     if (window.confirm('EXCLUIR REGISTRO? Esta ação removerá a questão permanentemente da base de dados.')) {
       setQuestions(prev => {
         const updated = prev.filter(q => q.id !== id);
-        storageService.saveQuestions(updated); // Persiste imediatamente
-        storageService.saveQuestionsToScript(updated);
+        persistQuestions(updated, true); // Persist with silent success
         return updated;
       });
     }
@@ -106,8 +131,7 @@ const Admin: React.FC = () => {
       const s = { ...settings, nextQuestionNumber: next + 1 };
       setSettings(s);
       storageService.saveSettings(s);
-      storageService.saveQuestions(updated);
-      storageService.saveQuestionsToScript(updated);
+      persistQuestions(updated, true);
       return updated;
     });
   };
@@ -118,8 +142,7 @@ const Admin: React.FC = () => {
     if (!window.confirm(`Excluir ${ids.length} questões?`)) return;
     setQuestions(prev => {
       const updated = prev.filter(q => !ids.includes(q.id));
-      storageService.saveQuestions(updated);
-      storageService.saveQuestionsToScript(updated);
+      persistQuestions(updated, true);
       setSelected({});
       return updated;
     });
@@ -128,8 +151,7 @@ const Admin: React.FC = () => {
   const handleDeleteAll = () => {
     if (!window.confirm('Excluir TODAS as questões?')) return;
     const updated: Question[] = [];
-    storageService.saveQuestions(updated);
-    storageService.saveQuestionsToScript(updated);
+    persistQuestions(updated, true);
     setQuestions(updated);
     const s = { ...settings, nextQuestionNumber: 1 };
     setSettings(s);
@@ -137,29 +159,33 @@ const Admin: React.FC = () => {
     setSelected({});
   };
 
-  const handleSaveQuestion = (e: React.FormEvent) => {
+  const handleSaveQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    setQuestions(prev => {
-      let updated: Question[];
-      if (editingQuestion) {
-        updated = prev.map(q => q.id === editingQuestion.id ? { ...q, ...formData } as Question : q);
-      } else {
-        const newQuestion = { 
-          ...formData, 
-          id: Math.random().toString(36).substr(2, 9),
-          number: settings.nextQuestionNumber
-        } as Question;
-        updated = [newQuestion, ...prev];
-        const next = (settings.nextQuestionNumber || 1) + 1;
-        const s = { ...settings, nextQuestionNumber: next };
-        setSettings(s);
-        storageService.saveSettings(s);
-      }
-      storageService.saveQuestions(updated);
-      storageService.saveQuestionsToScript(updated);
-      return updated;
-    });
+    // Determine updated list first
+    let updatedQuestions: Question[] = [];
+    
+    if (editingQuestion) {
+      updatedQuestions = questions.map(q => q.id === editingQuestion.id ? { ...q, ...formData } as Question : q);
+    } else {
+      const newQuestion = { 
+        ...formData, 
+        id: Math.random().toString(36).substr(2, 9),
+        number: settings.nextQuestionNumber
+      } as Question;
+      updatedQuestions = [newQuestion, ...questions];
+      
+      const next = (settings.nextQuestionNumber || 1) + 1;
+      const s = { ...settings, nextQuestionNumber: next };
+      setSettings(s);
+      storageService.saveSettings(s);
+    }
+    
+    // Update State
+    setQuestions(updatedQuestions);
+    
+    // Save Definitive
+    await persistQuestions(updatedQuestions, true); // Silent success because modal closes
 
     setShowModal(false);
     resetForm();
@@ -320,21 +346,28 @@ const Admin: React.FC = () => {
       let prompt = '';
       
       if (section === SectionType.READING) {
-         prompt = `Crie ${count} questões de LEITURA (Reading) para nível ${level}. 
-         Tema: ${topic || 'Geral/Acadêmico'}.
+         prompt = `Gere ${count} questões de LEITURA (Reading) para o nível ${level} do CEFR.
          IMPORTANTE:
-         - Cada questão deve ter um texto-base apropriado para o nível ${level}.
-         - Se for uma tarefa de CORRESPONDÊNCIA (Matching), use o formato com 'subQuestions'.
-         - Se for Múltipla Escolha, forneça o texto e a pergunta no campo 'text'.
+         - Inclua um texto base acadêmico ou profissional, adequado para o nível ${level}. O texto deve ter entre 150-250 palavras.
+         - A pergunta deve ser sobre o texto fornecido.
+         - O campo 'text' deve conter O TEXTO COMPLETO seguido da PERGUNTA. Use \n\n para separar.
+         - Exemplo de formato para 'text': "TEXTO...\n\nPERGUNTA..."
          - Retorne APENAS um JSON Array de objetos Question.`;
       } else if (section === SectionType.USE_OF_ENGLISH) {
-         prompt = `Crie ${count} questões de USE OF ENGLISH para nível ${level}.
-         Tema: ${topic || 'Variado'}.
-         Foque em: Collocations, Phrasal Verbs, Word Formation ou Sentence Transformation.
+         prompt = `Gere ${count} questões de USE OF ENGLISH para o nível ${level} do CEFR.
+         Tema: ${topic || 'Negócios e Tecnologia'}.
+         Foque em: Advanced Grammar, Collocations, Phrasal Verbs, e Sentence Transformation.
+         O enunciado deve ser claro e profissional.
          Retorne APENAS um JSON Array.`;
+      } else if (section === SectionType.LISTENING) {
+         prompt = `Gere ${count} questões de LISTENING para o nível ${level} do CEFR.
+         - Como não podemos gerar áudio real, crie questões baseadas em "transcrições" de diálogos curtos.
+         - Inclua a transcrição no início do campo 'text' (Ex: "Speaker A: ... Speaker B: ... \n\nQuestion: ...").
+         - Retorne APENAS um JSON Array.`;
       } else {
-         prompt = `Crie ${count} questões de ${section} para nível ${level}.
+         prompt = `Gere ${count} questões de ${section} para o nível ${level} do CEFR.
          Tema: ${topic || 'Variado'}.
+         Nível de exigência: Alto (Oxford/Cambridge style).
          Retorne APENAS um JSON Array.`;
       }
 
@@ -403,8 +436,7 @@ const Admin: React.FC = () => {
           const start = settings.nextQuestionNumber || 1;
           const newQs = aggregator.map((q, i) => ({ ...q, number: start + i }));
           const updated = [...newQs, ...prev];
-          storageService.saveQuestions(updated);
-          storageService.saveQuestionsToScript(updated);
+          persistQuestions(updated, true); // Persist immediately
           return updated;
         });
         const next = (settings.nextQuestionNumber || 1) + aggregator.length;
@@ -414,7 +446,7 @@ const Admin: React.FC = () => {
         
         setShowAiGeneratorModal(false);
         setAiGenConfig({ ...aiGenConfig, topic: '' }); // Reset topic only
-        alert(`${aggregator.length} questões geradas com sucesso!`);
+        alert(`${aggregator.length} questões geradas e salvas com sucesso!`);
       } else {
         alert('Nenhuma questão foi gerada. Tente novamente.');
       }
@@ -586,6 +618,16 @@ const Admin: React.FC = () => {
                   a.click();
                   URL.revokeObjectURL(url);
                 }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Exportar JSON</button>
+                <button onClick={async () => {
+                  if(!window.confirm('SALVAR NO SCRIPT (DEFINITIVO)?\n\nIsso irá sobrescrever o arquivo "questions.json" no servidor local com as questões que você está vendo agora.\n\nUse isso após adicionar/remover questões para garantir que elas fiquem salvas para sempre.')) return;
+                  
+                  const ok = await storageService.saveQuestionsToScript(questions);
+                  if (ok) {
+                    alert('SUCESSO!\nArquivo "questions.json" atualizado.\nAgora faça o COMMIT e PUSH para o GitHub.');
+                  } else {
+                    alert('ATENÇÃO (MODO VERCEL):\nO site não consegue salvar o arquivo automaticamente no servidor online.\n\nSOLUÇÃO:\n1. Clique em "Exportar JSON" ao lado.\n2. Renomeie o arquivo baixado para "questions.json".\n3. Substitua o arquivo na pasta "public/" do seu projeto.\n4. Suba para o GitHub.');
+                  }
+                }} className="px-4 py-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 active:scale-95">Salvar Definitivo</button>
                 <label className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95 cursor-pointer">
                   Importar JSON
                   <input type="file" accept="application/json" className="hidden" onChange={async (e) => {
@@ -769,13 +811,8 @@ const Admin: React.FC = () => {
                   </button>
                   <div className="mt-4 flex items-center justify-center gap-3">
                     <button onClick={async () => {
-                      const ok = await storageService.saveQuestionsToScript(questions);
-                      if (ok) {
-                        alert('SUCESSO!\n\nO arquivo "questions.json" foi atualizado na sua pasta local.\n\nAGORA VOCÊ DEVE:\n1. Fazer o Commit dessas alterações.\n2. Dar Push para o GitHub.\n\nO Vercel irá reconstruir o site com as novas questões automaticamente.');
-                      } else {
-                        alert('FALHA AO SALVAR!\n\nO servidor de desenvolvimento não está rodando ou não respondeu.\n\nIMPORTANTE: Você só consegue salvar permanentemente se estiver rodando o site LOCALMENTE (localhost).\n\nSe você está no site online (Vercel), as alterações NÃO serão salvas no servidor.');
-                      }
-                    }} className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Salvar no Script (Definitivo)</button>
+                  await persistQuestions(questions, false);
+                }} className="px-6 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 active:scale-95">Salvar no Script (Definitivo)</button>
                   </div>
                   {importTotal > 0 && (
                     <div className="mt-6 text-center">

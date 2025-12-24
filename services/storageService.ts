@@ -33,6 +33,7 @@ export const storageService = {
     localStorage.setItem(KEYS.CERTIFICATES, JSON.stringify(certs));
   },
   getQuestions: (): Question[] => {
+    // Deprecated: Use getQuestionsWithFallback instead for async file loading
     const data = localStorage.getItem(KEYS.QUESTIONS);
     return data ? JSON.parse(data) : INITIAL_QUESTIONS;
   },
@@ -41,17 +42,37 @@ export const storageService = {
   },
   getQuestionsWithFallback: async (): Promise<Question[]> => {
     try {
+      // Prioridade 1: LocalStorage (Edição Local tem precedência)
+      // Se estamos editando, queremos ver o que editamos, não o que está no arquivo antigo.
       const localStr = localStorage.getItem(KEYS.QUESTIONS);
       const local = localStr ? JSON.parse(localStr) as Question[] : [];
-      if (Array.isArray(local) && local.length > 0) return local;
+
+      // Se temos dados locais válidos, usamos eles
+      if (Array.isArray(local) && local.length > 0) {
+          // Mas, por segurança, verificamos se o arquivo é MAIS NOVO ou DIFERENTE em background?
+          // Não, vamos confiar no LocalStorage como "Cache Quente"
+          return local;
+      }
+
+      // Prioridade 2: Arquivo JSON (Primeira carga ou cache limpo)
       const fromScript = await (async () => {
-        try { const r = await fetch('/questions.json'); if (!r.ok) return []; const j = await r.json(); return Array.isArray(j) ? j as Question[] : []; } catch { return []; }
+        try { 
+            const r = await fetch('/questions.json'); 
+            if (!r.ok) return []; 
+            const j = await r.json(); 
+            return Array.isArray(j) && j.length > 0 ? j as Question[] : []; 
+        } catch { return []; }
       })();
-      const chosen = (fromScript && fromScript.length > 0) ? fromScript : INITIAL_QUESTIONS as Question[];
-      localStorage.setItem(KEYS.QUESTIONS, JSON.stringify(chosen));
-      return chosen;
+
+      if (fromScript.length > 0) {
+          // Popula o cache local pela primeira vez
+          localStorage.setItem(KEYS.QUESTIONS, JSON.stringify(fromScript));
+          return fromScript;
+      }
+
+      // Prioridade 3: Constantes (Fallback final)
+      return INITIAL_QUESTIONS as Question[];
     } catch {
-      localStorage.setItem(KEYS.QUESTIONS, JSON.stringify(INITIAL_QUESTIONS));
       return INITIAL_QUESTIONS as Question[];
     }
   },
