@@ -608,11 +608,11 @@ const Admin: React.FC = () => {
             <div className="bg-white rounded-[2rem] lg:rounded-[3rem] border border-slate-100 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] overflow-hidden">
                {/* Header - Hidden on Mobile */}
                <div className="hidden lg:grid grid-cols-12 gap-6 px-12 py-8 border-b border-slate-50 bg-slate-50/30">
-                  <div className="col-span-2 flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                  <div className="col-span-3 flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                     <input type="checkbox" onChange={e => setSelected(Object.fromEntries(questions.map(q => [q.id, e.target.checked])))} className="w-4 h-4 border border-slate-300 rounded" />
                     Level/Section
                   </div>
-                  <div className="col-span-7 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exam Prompt</div>
+                  <div className="col-span-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exam Prompt</div>
                   <div className="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Answer</div>
                   <div className="col-span-2 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</div>
                </div>
@@ -624,7 +624,7 @@ const Admin: React.FC = () => {
                       <div key={q.id} className="relative flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 p-6 lg:px-12 lg:py-10 items-start lg:items-center hover:bg-slate-50/50 transition-all group animate-in slide-in-from-left-2 duration-300">
                         
                         {/* Mobile Top Row: Checkbox + Level + ID */}
-                        <div className="col-span-2 flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+                        <div className="col-span-3 flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
                           <div className="flex items-center gap-3">
                             <input type="checkbox" checked={!!selected[q.id]} onChange={e => setSelected(prev => ({ ...prev, [q.id]: e.target.checked }))} className="w-5 h-5 border border-slate-300 rounded" />
                             <span className="px-3 py-1 rounded-md border border-rose-300 bg-rose-100 text-rose-700 font-black text-xs">#{q.number ?? '-'}</span>
@@ -632,25 +632,24 @@ const Admin: React.FC = () => {
                               {q.level}
                             </span>
                           </div>
-                          {/* Section shown on mobile right side */}
-                          <span className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1 bg-slate-50 px-2 py-1 rounded">
-                            {q.section}
-                          </span>
-                        </div>
-
-                        {/* Desktop Section Label (Hidden on mobile as it's moved up) */}
-                        <div className="hidden lg:block absolute left-[120px] mt-12 pointer-events-none">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                            {q.section}
-                            {((q.section === 'LISTENING' && !q.audioUrl) || q.section !== 'LISTENING') && (
-                              <Sparkles className="w-3 h-3 text-slate-300" />
-                            )}
-                          </span>
+                          
+                          {/* Section Label (Mobile: Right side, Desktop: Next to Level) */}
+                          <div className="flex items-center">
+                             <span className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1 bg-slate-50 px-2 py-1 rounded">
+                               {q.section}
+                             </span>
+                             <span className="hidden lg:flex text-[10px] font-black text-slate-400 uppercase tracking-tighter items-center gap-1 ml-4 whitespace-nowrap">
+                               {q.section}
+                               {((q.section === 'LISTENING' && !q.audioUrl) || q.section !== 'LISTENING') && (
+                                 <Sparkles className="w-3 h-3 text-slate-300" />
+                               )}
+                             </span>
+                          </div>
                         </div>
 
                         {/* Text Content */}
-                        <div className="col-span-7 w-full">
-                          <p className="text-sm lg:text-[15px] font-bold text-slate-800 leading-relaxed lg:pl-16 lg:pr-12 line-clamp-3 lg:line-clamp-2">{q.text}</p>
+                        <div className="col-span-6 w-full">
+                          <p className="text-sm lg:text-[15px] font-bold text-slate-800 leading-relaxed lg:pl-6 lg:pr-12 line-clamp-3 lg:line-clamp-2">{q.text}</p>
                         </div>
 
                         {/* Bottom Row on Mobile: Answer + Actions */}
