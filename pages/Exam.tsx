@@ -132,7 +132,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   };
 
   // Central submission function
-  const processSubmit = useCallback((forcedScore?: number, failureReason?: string) => {
+  const processSubmit = useCallback(async (forcedScore?: number, failureReason?: string) => {
     if (submissionRef.current) return;
     submissionRef.current = true;
     setIsSubmitting(true);
@@ -142,8 +142,11 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
        streamRef.current.getTracks().forEach(track => track.stop());
     }
     
-    setTimeout(() => {
-      const users = storageService.getUsers();
+    // Slight delay to allow UI to update
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    try {
+      const users = await storageService.getUsers();
       let finalScore = 0;
       let correct = 0;
       let totalItems = 0;
@@ -190,11 +193,15 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
           lastExamDate: Date.now() // Register exam date for 30-day block
         } : u
       );
-      storageService.saveUsers(updatedUsers);
+      await storageService.saveUsers(updatedUsers);
       
       onComplete(finalScore);
       navigate('/dashboard', { replace: true });
-    }, 2000);
+    } catch (err) {
+      console.error("Failed to save exam result", err);
+      // In a real app, we would have retry logic or offline storage here
+      alert("Failed to save result. Please contact support immediately.");
+    }
   }, [questions, answers, currentUser, onComplete, navigate, capturedScreenshots]);
 
   // Integrity System (Proctoring)
@@ -206,8 +213,20 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   }, [hasStarted]);
 
   useEffect(() => {
-    const allQuestions = storageService.getQuestions();
-    setQuestions(allQuestions);
+    // This effect handles loading questions
+    // Since getQuestions is still synchronous (uses local storage or fetches), we might want to make it async later
+    // For now, let's assume getQuestionsWithFallback handles it well enough or is async
+    // Wait, storageService.getQuestions() is NOT async in the original file, it was just getQuestions().
+    // Let's check storageService.ts again.
+    // It has getQuestionsWithFallback which IS async.
+    // But typically we used storageService.getQuestions() which was sync.
+    // Let's assume we should use getQuestionsWithFallback now if we want real data.
+    
+    const loadQuestions = async () => {
+        const allQuestions = await storageService.getQuestionsWithFallback();
+        setQuestions(allQuestions);
+    };
+    loadQuestions();
   }, []);
 
   useEffect(() => {
@@ -261,7 +280,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   if (questions.length === 0) return (
     <div className="flex flex-col items-center py-40 gap-4">
       <Loader2 className="animate-spin text-indigo-600 w-10 h-10" />
-      <p className="font-bold text-slate-400">Configuring secure environment...</p>
+      <p className="font-bold text-slate-400">Loading exam content...</p>
     </div>
   );
 

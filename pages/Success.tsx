@@ -20,8 +20,8 @@ const Success: React.FC = () => {
         
         // Save to permanent storage if not already there
         // Note: In a real app, this would happen via webhook
-        import('../services/storageService').then(({ storageService }) => {
-            const users = storageService.getUsers();
+        import('../services/storageService').then(async ({ storageService }) => {
+            const users = await storageService.getUsers();
             const exists = users.find(u => u.email === pendingUser.email);
             
             if (!exists) {

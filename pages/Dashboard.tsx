@@ -24,7 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUser }) => {
     setIsProfileComplete(!!(currentUser.fullName && currentUser.cpf));
   }, [currentUser]);
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -33,25 +33,29 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUser }) => {
       return;
     }
 
-    // Validate unique ID (CPF equivalent)
-    const users = storageService.getUsers();
-    const cpfExists = users.some(u => u.cpf === formData.cpf && u.id !== currentUser.id);
-    
-    if (cpfExists) {
-      setError('This ID/Passport is already registered to another account. Please contact support.');
-      return;
-    }
+    try {
+      // Validate unique ID (CPF equivalent)
+      const users = await storageService.getUsers();
+      const cpfExists = users.some(u => u.cpf === formData.cpf && u.id !== currentUser.id);
+      
+      if (cpfExists) {
+        setError('This ID/Passport is already registered to another account. Please contact support.');
+        return;
+      }
 
-    const updatedUser = { ...currentUser, fullName: formData.fullName, cpf: formData.cpf };
-    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
-    
-    storageService.saveUsers(updatedUsers);
-    onUpdateUser(updatedUser);
-    setSuccess('Profile updated successfully!');
-    setIsProfileComplete(true);
+      const updatedUser = { ...currentUser, fullName: formData.fullName, cpf: formData.cpf };
+      const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+      
+      await storageService.saveUsers(updatedUsers);
+      onUpdateUser(updatedUser);
+      setSuccess('Profile updated successfully!');
+      setIsProfileComplete(true);
+    } catch (err) {
+      setError('Failed to update profile. Please try again.');
+    }
   };
 
-  const generatePDF = (type: 'report' | 'certificate') => {
+  const generatePDF = async (type: 'report' | 'certificate') => {
     const doc = new jsPDF({
       orientation: type === 'certificate' ? 'landscape' : 'portrait',
       unit: 'mm',
@@ -63,16 +67,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUser }) => {
     // Simple visual settings
     
     if (isCertificate) {
-      const settings = storageService.getSettings();
+      const settings = await storageService.getSettings();
       const certificateId = currentUser.certificateCode || `EPT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
       // If no ID saved, try to save (consistency improvement)
       if (!currentUser.certificateCode) {
-        const users = storageService.getUsers();
-        const updatedUser = { ...currentUser, certificateCode: certificateId };
-        const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
-        storageService.saveUsers(updatedUsers);
-        onUpdateUser(updatedUser); // Update local state
+        try {
+          const users = await storageService.getUsers();
+          const updatedUser = { ...currentUser, certificateCode: certificateId };
+          const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+          await storageService.saveUsers(updatedUsers);
+          onUpdateUser(updatedUser); // Update local state
+        } catch (err) {
+          console.error('Failed to save certificate ID', err);
+        }
       }
 
       // Try to load background image
@@ -261,31 +269,36 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUser }) => {
     return Math.ceil(30 - daysSinceLast);
   };
 
-  const handleRetake = () => {
+  const handleRetake = async () => {
     if (!window.confirm('Start new attempt? The current result will be archived.')) return;
 
-    const historyEntry = {
-      date: currentUser.lastExamDate || Date.now(),
-      score: currentUser.score || 0,
-      passed: (currentUser.score || 0) >= 60,
-      breakdown: undefined
-    };
+    try {
+      const historyEntry = {
+        date: currentUser.lastExamDate || Date.now(),
+        score: currentUser.score || 0,
+        passed: (currentUser.score || 0) >= 60,
+        breakdown: undefined
+      };
 
-    const updatedUser: User = {
-      ...currentUser,
-      examCompleted: false,
-      score: undefined,
-      failureReason: undefined,
-      certificateCode: undefined,
-      screenshots: [],
-      examHistory: [...(currentUser.examHistory || []), historyEntry]
-    };
+      const updatedUser: User = {
+        ...currentUser,
+        examCompleted: false,
+        score: undefined,
+        failureReason: undefined,
+        certificateCode: undefined,
+        screenshots: [],
+        examHistory: [...(currentUser.examHistory || []), historyEntry]
+      };
 
-    const users = storageService.getUsers();
-    const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
-    storageService.saveUsers(newUsers);
-    onUpdateUser(updatedUser);
-    navigate('/prova');
+      const users = await storageService.getUsers();
+      const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+      await storageService.saveUsers(newUsers);
+      onUpdateUser(updatedUser);
+      navigate('/prova');
+    } catch (err) {
+      console.error('Failed to start retake', err);
+      alert('Failed to start new attempt. Please try again.');
+    }
   };
 
   return (

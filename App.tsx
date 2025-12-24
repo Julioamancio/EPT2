@@ -30,8 +30,8 @@ const App: React.FC = () => {
   // Fixed: Replaced NodeJS.Timeout with ReturnType<typeof setTimeout> to avoid "Cannot find namespace 'NodeJS'" error in browser environments.
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleUserLogin = (email: string, level: string) => {
-    const users = storageService.getUsers();
+  const handleUserLogin = async (email: string, level: string) => {
+    const users = await storageService.getUsers();
     const user = users.find(u => u.email === email && u.purchasedLevel === level);
     if (user) {
       setAuthState({ user, isAdmin: false });

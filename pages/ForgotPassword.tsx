@@ -9,13 +9,16 @@ const ForgotPassword: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const handleReset = (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
-    setTimeout(() => {
-      const users = storageService.getUsers();
+    try {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const users = await storageService.getUsers();
       const user = users.find(u => u.email === email);
 
       if (user) {
@@ -29,8 +32,14 @@ const ForgotPassword: React.FC = () => {
           text: 'Email not found in our database.'
         });
       }
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: 'An error occurred. Please try again later.'
+      });
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (

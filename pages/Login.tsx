@@ -15,13 +15,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      const users = storageService.getUsers();
+    try {
+      // Simulate network delay for UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const users = await storageService.getUsers();
       const user = users.find(u => u.email === email && u.password === password);
 
       if (user) {
@@ -35,7 +38,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError('Credentials do not match our records.');
         setLoading(false);
       }
-    }, 1200);
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (

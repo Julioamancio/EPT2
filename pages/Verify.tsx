@@ -10,15 +10,18 @@ const Verify: React.FC = () => {
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code) return;
 
     setLoading(true);
     setSearched(false);
     
-    setTimeout(() => {
-      const users = storageService.getUsers();
+    try {
+      // Simulate network request
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      const users = await storageService.getUsers();
       // Search across all users
       const foundUser = users.find(u => u.certificateCode && u.certificateCode.toUpperCase() === code.toUpperCase());
       
@@ -34,15 +37,18 @@ const Verify: React.FC = () => {
           isApproved: (foundUser.score || 0) >= 60
         });
       } else {
-        // Fallback to legacy certificates table if needed (though now we use users mostly)
+        // Fallback to legacy certificates table if needed
+        // Note: getCertificates is synchronous in current implementation, but good to check if it changes
         const certificates = storageService.getCertificates();
         const foundCert = certificates.find(c => c.uniqueCode === code.toUpperCase());
         setResult(foundCert || null);
       }
-
+    } catch (err) {
+      console.error('Verification failed', err);
+    } finally {
       setSearched(true);
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (

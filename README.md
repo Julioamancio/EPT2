@@ -6,9 +6,7 @@ Plataforma completa para certificação de proficiência em inglês (níveis CEF
 
 ### 1. Painel Administrativo (Gestão)
 Para criar provas, gerenciar alunos e finanças:
-- **URL:** `/admin/login`
-- **Usuário:** `admin`
-- **Senha:** `admin123*`
+
 
 ### 2. Candidato (Área do Aluno)
 Para realizar exames e obter certificações:
