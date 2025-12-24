@@ -59,7 +59,10 @@ export const storageService = {
     // 2. Database Sync
     if (isSupabaseConfigured()) {
         const { error } = await supabase.from('questions').delete().eq('id', id);
-        if (error) console.error('DB Delete Error:', error);
+        if (error) {
+            console.error('DB Delete Error:', error);
+            throw new Error('Failed to delete from database: ' + error.message);
+        }
     }
   },
 
