@@ -533,16 +533,18 @@ const Admin: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* HEADER MODERNO */}
         <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-16">
-          <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-            <h1 className="text-4xl font-black text-[#0F172A] tracking-tight">Management Portal</h1>
+          <div className="animate-in fade-in slide-in-from-left-4 duration-500 w-full lg:w-auto">
+            <h1 className="text-3xl lg:text-4xl font-black text-[#0F172A] tracking-tight">Management Portal</h1>
             <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-3">CEFR Exam Repository</p>
           </div>
-          <div className="flex bg-white p-1 rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
-            <button onClick={() => setActiveTab('questions')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'questions' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Questions</button>
-            <button onClick={() => setActiveTab('ai-import')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ai-import' ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>AI Import</button>
-            <button onClick={() => setActiveTab('sales')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sales' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Students</button>
-            <button onClick={() => setActiveTab('finance')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'finance' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Finance</button>
-            <button onClick={() => setActiveTab('settings')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Layout</button>
+          <div className="flex bg-white p-1 rounded-3xl border border-slate-200 shadow-sm overflow-x-auto w-full lg:w-auto animate-in fade-in slide-in-from-right-4 duration-500 scrollbar-hide">
+            <div className="flex min-w-max">
+              <button onClick={() => setActiveTab('questions')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'questions' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Questions</button>
+              <button onClick={() => setActiveTab('ai-import')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'ai-import' ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>AI Import</button>
+              <button onClick={() => setActiveTab('sales')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'sales' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Students</button>
+              <button onClick={() => setActiveTab('finance')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'finance' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Finance</button>
+              <button onClick={() => setActiveTab('settings')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'settings' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Layout</button>
+            </div>
           </div>
         </div>
 
@@ -551,40 +553,42 @@ const Admin: React.FC = () => {
             {/* BARRA DE FILTROS & AÇÃO */}
             <div className="flex flex-col gap-6">
               {/* ROW 1: ACTIONS (Aligned Right) */}
-              <div className="flex flex-wrap items-center justify-end gap-3 w-full">
-                <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-[#0F172A] text-white px-6 py-2 rounded-[1rem] font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 group">
+              <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3 w-full">
+                <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-[#0F172A] text-white px-6 py-3 lg:py-2 rounded-[1rem] font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 group w-full sm:w-auto">
                   <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" /> Add Record
                 </button>
-                <button onClick={() => setShowAiGeneratorModal(true)} className="bg-indigo-600 text-white px-6 py-2 rounded-[1rem] font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95">
+                <button onClick={() => setShowAiGeneratorModal(true)} className="bg-indigo-600 text-white px-6 py-3 lg:py-2 rounded-[1rem] font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 w-full sm:w-auto">
                   <Sparkles className="w-3.5 h-3.5" /> Generate with AI
                 </button>
-                <button onClick={() => { const all = Object.fromEntries(questions.map(q => [q.id, true])); setSelected(all); }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Select All</button>
-                <button onClick={handleDeleteSelected} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Delete Selected</button>
-                <button onClick={handleDeleteAll} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Delete All</button>
+                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+                  <button onClick={() => { const all = Object.fromEntries(questions.map(q => [q.id, true])); setSelected(all); }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95 whitespace-nowrap">Select All</button>
+                  <button onClick={handleDeleteSelected} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95 whitespace-nowrap">Delete Selected</button>
+                  <button onClick={handleDeleteAll} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95 whitespace-nowrap">Delete All</button>
+                </div>
               </div>
 
               {/* ROW 2: FILTERS & SEARCH (Full Width) */}
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-0.5 rounded-[1.5rem] border border-slate-200 shadow-sm w-full">
-                <div className="flex items-center gap-1 overflow-x-auto max-w-full p-1 scrollbar-hide">
-                 <button onClick={() => setFilterLevel('ALL')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filterLevel === 'ALL' ? 'bg-[#0F172A] text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}>All</button>
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-2 lg:p-0.5 rounded-[1.5rem] border border-slate-200 shadow-sm w-full">
+                <div className="flex items-center gap-1 overflow-x-auto max-w-full p-1 scrollbar-hide w-full lg:w-auto">
+                 <button onClick={() => setFilterLevel('ALL')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shrink-0 ${filterLevel === 'ALL' ? 'bg-[#0F172A] text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}>All</button>
                  {Object.values(ProficiencyLevel).map(lvl => {
                    const styles = getLevelStyles(lvl);
                    return (
                      <button 
                        key={lvl} 
                        onClick={() => setFilterLevel(lvl)} 
-                       className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-transparent ${filterLevel === lvl ? `${styles.sqBg} ${styles.sqText} border-current shadow-sm` : 'text-slate-400 hover:bg-slate-50'}`}
+                       className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-transparent shrink-0 ${filterLevel === lvl ? `${styles.sqBg} ${styles.sqText} border-current shadow-sm` : 'text-slate-400 hover:bg-slate-50'}`}
                       >
                         {lvl}
                       </button>
                    );
                  })}
                 </div>
-                <div className="flex items-center gap-2 px-4 border-l border-slate-100 h-8">
-                  <div className="relative group">
+                <div className="flex items-center gap-2 px-4 border-t lg:border-t-0 lg:border-l border-slate-100 h-12 lg:h-8 w-full lg:w-auto pt-2 lg:pt-0">
+                  <div className="relative group shrink-0">
                     <button className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors">
                       <ArrowUpDown className="w-3 h-3" />
-                      {sortOrder === 'ASC' ? '1-9' : sortOrder === 'DESC' ? '9-1' : sortOrder === 'LEVEL_ASC' ? 'A-C' : 'C-A'}
+                      <span className="hidden sm:inline">{sortOrder === 'ASC' ? '1-9' : sortOrder === 'DESC' ? '9-1' : sortOrder === 'LEVEL_ASC' ? 'A-C' : 'C-A'}</span>
                     </button>
                     <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 hidden group-hover:block z-50">
                       <button onClick={() => setSortOrder('ASC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'ASC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Ascending (1-9)</button>
@@ -594,15 +598,16 @@ const Admin: React.FC = () => {
                     </div>
                   </div>
                   <div className="w-px h-4 bg-slate-200 mx-2"></div>
-                  <Search className="w-4 h-4 text-slate-300" />
-                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search..." className="bg-transparent outline-none text-slate-700 font-medium w-32 md:w-48" />
+                  <Search className="w-4 h-4 text-slate-300 shrink-0" />
+                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search..." className="bg-transparent outline-none text-slate-700 font-medium w-full lg:w-48" />
                 </div>
               </div>
             </div>
 
             {/* LISTAGEM PREMIUM */}
-            <div className="bg-white rounded-[3rem] border border-slate-100 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] overflow-hidden">
-               <div className="grid grid-cols-12 gap-6 px-12 py-8 border-b border-slate-50 bg-slate-50/30">
+            <div className="bg-white rounded-[2rem] lg:rounded-[3rem] border border-slate-100 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] overflow-hidden">
+               {/* Header - Hidden on Mobile */}
+               <div className="hidden lg:grid grid-cols-12 gap-6 px-12 py-8 border-b border-slate-50 bg-slate-50/30">
                   <div className="col-span-2 flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                     <input type="checkbox" onChange={e => setSelected(Object.fromEntries(questions.map(q => [q.id, e.target.checked])))} className="w-4 h-4 border border-slate-300 rounded" />
                     Level/Section
@@ -611,53 +616,76 @@ const Admin: React.FC = () => {
                   <div className="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Answer</div>
                   <div className="col-span-2 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</div>
                </div>
+               
                <div className="divide-y divide-slate-50">
                   {filteredQuestions.map(q => {
                     const styles = getLevelStyles(q.level);
                     return (
-                      <div key={q.id} className="grid grid-cols-12 gap-6 px-12 py-10 items-center hover:bg-slate-50/50 transition-all group animate-in slide-in-from-left-2 duration-300">
-                        <div className="col-span-2 flex items-center gap-5">
-                          <input type="checkbox" checked={!!selected[q.id]} onChange={e => setSelected(prev => ({ ...prev, [q.id]: e.target.checked }))} className="w-5 h-5 border border-slate-300 rounded" />
-                          <span className="px-3 py-1 rounded-md border border-rose-300 bg-rose-100 text-rose-700 font-black text-xs">#{q.number ?? '-'}</span>
-                          <span className={`w-16 h-16 aspect-square inline-flex items-center justify-center rounded-md font-black text-sm border ${styles.sqBg} ${styles.sqText} ${styles.sqBorder} group-hover:scale-110 transition-transform`}>
-                            {q.level}
+                      <div key={q.id} className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 p-6 lg:px-12 lg:py-10 items-start lg:items-center hover:bg-slate-50/50 transition-all group animate-in slide-in-from-left-2 duration-300">
+                        
+                        {/* Mobile Top Row: Checkbox + Level + ID */}
+                        <div className="col-span-2 flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+                          <div className="flex items-center gap-3">
+                            <input type="checkbox" checked={!!selected[q.id]} onChange={e => setSelected(prev => ({ ...prev, [q.id]: e.target.checked }))} className="w-5 h-5 border border-slate-300 rounded" />
+                            <span className="px-3 py-1 rounded-md border border-rose-300 bg-rose-100 text-rose-700 font-black text-xs">#{q.number ?? '-'}</span>
+                            <span className={`w-12 h-12 lg:w-16 lg:h-16 aspect-square inline-flex items-center justify-center rounded-md font-black text-xs lg:text-sm border ${styles.sqBg} ${styles.sqText} ${styles.sqBorder} group-hover:scale-110 transition-transform`}>
+                              {q.level}
+                            </span>
+                          </div>
+                          {/* Section shown on mobile right side */}
+                          <span className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1 bg-slate-50 px-2 py-1 rounded">
+                            {q.section}
                           </span>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                        </div>
+
+                        {/* Desktop Section Label (Hidden on mobile as it's moved up) */}
+                        <div className="hidden lg:block absolute left-[120px] mt-12 pointer-events-none">
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1">
                             {q.section}
                             {((q.section === 'LISTENING' && !q.audioUrl) || q.section !== 'LISTENING') && (
                               <Sparkles className="w-3 h-3 text-slate-300" />
                             )}
                           </span>
                         </div>
-                        <div className="col-span-7">
-                          <p className="text-[15px] font-bold text-slate-800 leading-relaxed pl-16 pr-12 line-clamp-2">{q.text}</p>
+
+                        {/* Text Content */}
+                        <div className="col-span-7 w-full">
+                          <p className="text-sm lg:text-[15px] font-bold text-slate-800 leading-relaxed lg:pl-16 lg:pr-12 line-clamp-3 lg:line-clamp-2">{q.text}</p>
                         </div>
-                        <div className="col-span-1">
-                          <div className="flex items-center gap-2 justify-start">
-                            <span className="px-3 py-1 rounded-md bg-emerald-600 text-white font-black text-xs">
-                              {String.fromCharCode(65 + (typeof q.correctAnswer === 'number' ? q.correctAnswer : 0))}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="col-span-2 flex justify-end gap-3">
-                          <button 
-                            onClick={() => { setEditingQuestion(q); setFormData(q); setShowModal(true); }} 
-                            className="p-3.5 bg-white border border-slate-100 rounded-2xl text-slate-300 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-xl hover:-translate-y-1 transition-all"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleDuplicateQuestion(q)} 
-                            className="p-3.5 bg-white border border-slate-100 rounded-2xl text-slate-300 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-xl hover:-translate-y-1 transition-all"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteQuestion(q.id)} 
-                            className="p-3.5 bg-white border border-slate-100 rounded-2xl text-slate-300 hover:text-red-600 hover:border-red-100 hover:shadow-xl hover:-translate-y-1 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                        {/* Bottom Row on Mobile: Answer + Actions */}
+                        <div className="flex items-center justify-between w-full lg:contents">
+                            {/* Answer */}
+                            <div className="col-span-1">
+                              <div className="flex items-center gap-2 justify-start">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2 lg:hidden">Answer:</span>
+                                <span className="px-3 py-1 rounded-md bg-emerald-600 text-white font-black text-xs">
+                                  {String.fromCharCode(65 + (typeof q.correctAnswer === 'number' ? q.correctAnswer : 0))}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="col-span-2 flex justify-end gap-2 lg:gap-3">
+                              <button 
+                                onClick={() => { setEditingQuestion(q); setFormData(q); setShowModal(true); }} 
+                                className="p-2 lg:p-3.5 bg-white border border-slate-100 rounded-xl lg:rounded-2xl text-slate-300 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-xl hover:-translate-y-1 transition-all"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDuplicateQuestion(q)} 
+                                className="p-2 lg:p-3.5 bg-white border border-slate-100 rounded-xl lg:rounded-2xl text-slate-300 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-xl hover:-translate-y-1 transition-all"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteQuestion(q.id)} 
+                                className="p-2 lg:p-3.5 bg-white border border-slate-100 rounded-xl lg:rounded-2xl text-slate-300 hover:text-red-600 hover:border-red-100 hover:shadow-xl hover:-translate-y-1 transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                         </div>
                       </div>
                     );
@@ -724,13 +752,15 @@ const Admin: React.FC = () => {
         {/* SALES TAB */}
         {activeTab === 'sales' && (
           <div className="bg-white border border-slate-100 rounded-[3rem] overflow-hidden shadow-2xl animate-in fade-in duration-500">
-             <div className="px-12 py-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+             <div className="px-6 lg:px-12 py-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-slate-900">Financial Report</h3>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                    Total: {candidates.length} students
                 </div>
              </div>
-             <div className="overflow-x-auto">
+             
+             {/* Desktop Table */}
+             <div className="hidden lg:block overflow-x-auto">
                <table className="w-full text-left min-w-[900px]">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
@@ -843,6 +873,86 @@ const Admin: React.FC = () => {
                   </tbody>
                </table>
              </div>
+
+             {/* Mobile Cards for Sales */}
+             <div className="lg:hidden flex flex-col divide-y divide-slate-100">
+                {candidates.map(c => (
+                  <div key={c.id} className="p-6 space-y-4">
+                     <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
+                              {c.fullName ? c.fullName.charAt(0) : c.email.charAt(0).toUpperCase()}
+                           </div>
+                           <div>
+                              <p className="text-sm font-bold text-slate-900">{c.fullName || 'User'}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{c.email}</p>
+                           </div>
+                        </div>
+                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
+                           <CheckCircle2 className="w-3 h-3" /> Paid
+                        </span>
+                     </div>
+
+                     <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Score</span>
+                        <div className="flex items-center gap-3">
+                           {c.score !== undefined ? (
+                              <>
+                                 <span className="text-lg font-black text-slate-900">{c.score}%</span>
+                                 <span className={`px-2 py-0.5 rounded-lg font-black text-[10px] ${c.score >= 85 ? 'bg-amber-100 text-amber-700' : c.score >= 60 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                                    {c.score >= 85 ? 'C1' : c.score >= 60 ? 'B2' : 'Fail'}
+                                 </span>
+                              </>
+                           ) : <span className="text-slate-300 font-bold text-xs">--</span>}
+                        </div>
+                     </div>
+
+                     <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</span>
+                        {c.certificateCode ? (
+                           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-bold uppercase tracking-widest">
+                              <Award className="w-3 h-3" /> Issued
+                           </span>
+                        ) : c.examCompleted ? (
+                           <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-[10px] font-bold uppercase tracking-widest">
+                                 <AlertTriangle className="w-3 h-3" /> Failed
+                              </span>
+                              <button onClick={() => handleUnlockCandidate(c.email)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                 <Sparkles className="w-3 h-3" />
+                              </button>
+                           </div>
+                        ) : (
+                           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-bold uppercase tracking-widest">
+                              <Clock className="w-3 h-3" /> Pending
+                           </span>
+                        )}
+                     </div>
+
+                     {c.examHistory && c.examHistory.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                           <div className="bg-blue-50 text-blue-700 p-2 rounded-lg text-center border border-blue-100">
+                              <span className="block text-[8px] font-black uppercase opacity-60">Reading</span>
+                              <span className="font-bold text-xs">{c.examHistory[c.examHistory.length - 1].breakdown?.reading}%</span>
+                           </div>
+                           <div className="bg-purple-50 text-purple-700 p-2 rounded-lg text-center border border-purple-100">
+                              <span className="block text-[8px] font-black uppercase opacity-60">Listening</span>
+                              <span className="font-bold text-xs">{c.examHistory[c.examHistory.length - 1].breakdown?.listening}%</span>
+                           </div>
+                           <div className="bg-teal-50 text-teal-700 p-2 rounded-lg text-center border border-teal-100">
+                              <span className="block text-[8px] font-black uppercase opacity-60">Use of Eng</span>
+                              <span className="font-bold text-xs">{c.examHistory[c.examHistory.length - 1].breakdown?.useOfEnglish}%</span>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+                ))}
+                {candidates.length === 0 && (
+                   <div className="p-12 text-center opacity-30">
+                      <p className="font-black uppercase text-[10px] tracking-widest">No candidates yet</p>
+                   </div>
+                )}
+             </div>
           </div>
         )}
 
@@ -850,35 +960,37 @@ const Admin: React.FC = () => {
         {activeTab === 'finance' && (
           <div className="space-y-8 animate-in fade-in duration-500">
              {/* Controls */}
-             <div className="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                <div className="flex gap-2">
+             <div className="flex flex-col lg:flex-row justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm gap-4">
+                <div className="flex gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
                    {['weekly', 'monthly', 'quarterly', 'semiannual', 'annual'].map((p) => (
                       <button 
                         key={p}
                         onClick={() => setFinancialPeriod(p as any)}
-                        className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${financialPeriod === p ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                        className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${financialPeriod === p ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
                       >
                         {p === 'weekly' ? 'Weekly' : p === 'monthly' ? 'Monthly' : p === 'quarterly' ? 'Quarterly' : p === 'semiannual' ? 'Semiannual' : 'Annual'}
                       </button>
                    ))}
                 </div>
-                <button 
-                  onClick={exportFinancialReport}
-                  className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95"
-                >
-                   <Download className="w-4 h-4" /> Export CSV
-                </button>
-                <button 
-                  onClick={handleResetSales}
-                  className="px-6 py-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-all active:scale-95"
-                  title="Clear sales data (testing only)"
-                >
-                   <Trash2 className="w-4 h-4" /> Reset Sales
-                </button>
+                <div className="flex gap-2 w-full lg:w-auto">
+                  <button 
+                    onClick={exportFinancialReport}
+                    className="flex-1 lg:flex-none px-6 py-3 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                  >
+                     <Download className="w-4 h-4" /> Export CSV
+                  </button>
+                  <button 
+                    onClick={handleResetSales}
+                    className="flex-1 lg:flex-none px-6 py-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-100 transition-all active:scale-95"
+                    title="Clear sales data (testing only)"
+                  >
+                     <Trash2 className="w-4 h-4" /> Reset Sales
+                  </button>
+                </div>
              </div>
 
              {/* Stats Cards */}
-             <div className="grid grid-cols-3 gap-8">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Total Revenue</p>
                    <p className="text-4xl font-black text-slate-900">${getFinancialData().totalRevenue.toFixed(2)}</p>
@@ -894,35 +1006,37 @@ const Admin: React.FC = () => {
              </div>
 
              {/* Chart Area */}
-             <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-xl">
-                <div className="flex items-center justify-between mb-12">
+             <div className="bg-white p-6 lg:p-12 rounded-[2rem] lg:rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
+                <div className="flex items-center justify-between mb-8 lg:mb-12">
                    <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
                       <BarChart2 className="w-6 h-6 text-indigo-600" /> Financial Balance
                    </h3>
                 </div>
                 
-                <div className="h-64 flex items-end justify-between gap-4">
-                   {Object.entries(getFinancialData().chartData).length === 0 ? (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold uppercase text-xs tracking-widest">
-                         No data for period
-                      </div>
-                   ) : (
-                      Object.entries(getFinancialData().chartData).map(([label, value], i) => {
-                         const maxVal = Math.max(...Object.values(getFinancialData().chartData));
-                         const height = (value / maxVal) * 100;
-                         return (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
-                               <div className="w-full bg-indigo-50 rounded-t-2xl relative overflow-hidden group-hover:bg-indigo-100 transition-all" style={{ height: `${height}%` }}>
-                                  <div className="absolute bottom-0 w-full bg-indigo-600 h-2 opacity-20"></div>
-                                  <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded-lg transition-all whitespace-nowrap">
-                                     ${value.toFixed(2)}
-                                  </div>
-                               </div>
-                               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
-                            </div>
-                         );
-                      })
-                   )}
+                <div className="overflow-x-auto pb-4">
+                  <div className="h-64 flex items-end justify-between gap-4 min-w-[600px] lg:min-w-0">
+                     {Object.entries(getFinancialData().chartData).length === 0 ? (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold uppercase text-xs tracking-widest">
+                           No data for period
+                        </div>
+                     ) : (
+                        Object.entries(getFinancialData().chartData).map(([label, value], i) => {
+                           const maxVal = Math.max(...Object.values(getFinancialData().chartData));
+                           const height = (value / maxVal) * 100;
+                           return (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-3 group min-w-[40px]">
+                                 <div className="w-full bg-indigo-50 rounded-t-2xl relative overflow-hidden group-hover:bg-indigo-100 transition-all" style={{ height: `${height}%` }}>
+                                    <div className="absolute bottom-0 w-full bg-indigo-600 h-2 opacity-20"></div>
+                                    <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded-lg transition-all whitespace-nowrap">
+                                       ${value.toFixed(2)}
+                                    </div>
+                                 </div>
+                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{label}</span>
+                              </div>
+                           );
+                        })
+                     )}
+                  </div>
                 </div>
              </div>
           </div>
