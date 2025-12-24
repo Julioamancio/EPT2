@@ -6,9 +6,7 @@ Esta plataforma permite a certificação de proficiência em inglês (B2 e C1) c
 
 ### 1. Painel Administrativo
 Para gerenciar questões, níveis e seções do exame:
-- **URL:** `/admin/login`
-- **Usuário:** `admin`
-- **Senha:** `admin123*`
+
 
 > **Nota de Segurança:** O painel possui um timeout de inatividade de 15 minutos. Após este período, você será deslogado automaticamente.
 
