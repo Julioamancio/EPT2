@@ -89,7 +89,7 @@ const Admin: React.FC = () => {
   };
 
   const handleDeleteQuestion = (id: string) => {
-    if (window.confirm('EXCLUIR REGISTRO? Esta ação removerá a questão permanentemente da base de dados.')) {
+    if (window.confirm('DELETE RECORD? This action will permanently remove the question from the database.')) {
       setQuestions(prev => {
         const updated = prev.filter(q => q.id !== id);
         storageService.deleteQuestion(id); 
@@ -118,7 +118,7 @@ const Admin: React.FC = () => {
   const handleDeleteSelected = () => {
     const ids = Object.keys(selected).filter(k => selected[k]);
     if (ids.length === 0) return;
-    if (!window.confirm(`Excluir ${ids.length} questões?`)) return;
+    if (!window.confirm(`Delete ${ids.length} questions?`)) return;
     
     // Delete one by one in DB (could be optimized with deleteMany but keeping it simple)
     ids.forEach(id => storageService.deleteQuestion(id));
@@ -131,7 +131,7 @@ const Admin: React.FC = () => {
   };
 
   const handleDeleteAll = () => {
-    if (!window.confirm('Excluir TODAS as questões?')) return;
+    if (!window.confirm('Delete ALL questions?')) return;
     // In a real app we might not want to allow this easily on DB
     questions.forEach(q => storageService.deleteQuestion(q.id));
     
@@ -193,15 +193,16 @@ const Admin: React.FC = () => {
           const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
           const response = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
-            contents: `Analise o texto e extraia questões em JSON.
-            IMPORTANTE:
-            1. Classifique cada questão no nível CEFR (A1-C2) adequado.
-            2. Se identificar uma tarefa de CORRESPONDÊNCIA (Matching), crie UMA ÚNICA questão onde:
-               - 'text' é a instrução principal.
-               - 'options' são as opções de destino (ex: Profissões A-K).
-               - 'subQuestions' é um array com os itens a serem correspondidos (cada um com 'text' e 'correctAnswerIndex' apontando para 'options').
-            3. Para questões normais, 'subQuestions' não deve existir.
-            Texto: "${chunks[c]}"`,
+            contents: `Analyze the text and extract exam questions in JSON format.
+            IMPORTANT:
+            1. Classify each question into the appropriate CEFR level (A1-C2).
+            2. If you identify a MATCHING task, create A SINGLE question where:
+               - 'text' is the main instruction.
+               - 'options' are the target options (e.g., Professions A-K).
+               - 'subQuestions' is an array of items to be matched (each with 'text' and 'correctAnswerIndex' pointing to 'options').
+            3. For standard questions, 'subQuestions' should not exist.
+            4. Ensure all content is in ENGLISH.
+            Text: "${chunks[c]}"`,
             config: {
               responseMimeType: "application/json",
               responseSchema: {
@@ -235,14 +236,14 @@ const Admin: React.FC = () => {
           parsed = JSON.parse(response.text || "[]") as Question[];
         } else {
           const client = new OpenAI({ apiKey: (import.meta as any).env.VITE_OPENAI_API_KEY, dangerouslyAllowBrowser: true });
-          const prompt = `Gere questões CEFR (A1-C2). Responda APENAS JSON.
-          Se for tarefa de Matching, crie um objeto com 'subQuestions' (array de {text, correctAnswerIndex}) e 'options' (lista de escolhas).
-          Caso contrário, use o formato padrão.
-          Texto: \n\n${chunks[c]}`;
+          const prompt = `Generate CEFR questions (A1-C2) from the text. Respond ONLY with JSON.
+          If it's a Matching task, create an object with 'subQuestions' (array of {text, correctAnswerIndex}) and 'options' (list of choices).
+          Otherwise, use standard format. Ensure all output is in ENGLISH.
+          Text: \n\n${chunks[c]}`;
           const completion = await client.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
-              { role: 'system', content: 'Responda apenas com JSON válido.' },
+              { role: 'system', content: 'Respond only with valid JSON.' },
               { role: 'user', content: prompt }
             ]
           });
@@ -269,7 +270,7 @@ const Admin: React.FC = () => {
              });
           } else {
             const opts = Array.isArray(q.options) ? q.options.slice(0, 4) : [];
-            while (opts.length < 4) opts.push(`Opção ${opts.length + 1}`);
+            while (opts.length < 4) opts.push(`Option ${opts.length + 1}`);
             let idx = typeof (q as any).correctAnswerIndex === 'number' ? (q as any).correctAnswerIndex : (typeof (q as any).correctAnswer === 'number' ? (q as any).correctAnswer : 0);
             if (typeof (q as any).correctAnswer === 'string') {
               const m = String((q as any).correctAnswer).trim().toUpperCase();
@@ -305,7 +306,7 @@ const Admin: React.FC = () => {
       setRawContent('');
       setActiveTab('questions');
     } catch (err) { 
-      alert('Erro na IA'); 
+      alert('AI Error'); 
     } finally { 
       setIsAiProcessing(false); 
       setImportTotal(0);
@@ -321,41 +322,41 @@ const Admin: React.FC = () => {
       let prompt = '';
       
       if (section === SectionType.READING) {
-         prompt = `Gere ${count} questões de LEITURA (Reading) para o nível ${level} do CEFR.
-         IMPORTANTE:
-         - Inclua um texto base acadêmico ou profissional, adequado para o nível ${level}. O texto deve ter entre 150-250 palavras.
-         - A pergunta deve ser sobre o texto fornecido.
-         - O campo 'text' deve conter O TEXTO COMPLETO seguido da PERGUNTA. Use \n\n para separar.
-         - Exemplo de formato para 'text': "TEXTO...\n\nPERGUNTA..."
-         - Retorne APENAS um JSON Array de objetos Question.`;
+         prompt = `Generate ${count} READING questions for CEFR level ${level}.
+         IMPORTANT:
+         - Include an academic or professional base text suitable for level ${level} (150-250 words).
+         - The question must be about the provided text.
+         - The 'text' field must contain THE FULL TEXT followed by the QUESTION. Use \n\n to separate.
+         - Example format for 'text': "TEXT...\n\nQUESTION..."
+         - Return ONLY a JSON Array of Question objects. Ensure content is in ENGLISH.`;
       } else if (section === SectionType.USE_OF_ENGLISH) {
-         prompt = `Gere ${count} questões de USE OF ENGLISH para o nível ${level} do CEFR.
-         Tema: ${topic || 'Negócios e Tecnologia'}.
-         Foque em: Advanced Grammar, Collocations, Phrasal Verbs, e Sentence Transformation.
-         O enunciado deve ser claro e profissional.
-         Retorne APENAS um JSON Array.`;
+         prompt = `Generate ${count} USE OF ENGLISH questions for CEFR level ${level}.
+         Topic: ${topic || 'Business & Technology'}.
+         Focus on: Advanced Grammar, Collocations, Phrasal Verbs, and Sentence Transformation.
+         The instruction must be clear and professional.
+         Return ONLY a JSON Array. Ensure content is in ENGLISH.`;
       } else if (section === SectionType.LISTENING) {
-         prompt = `Gere ${count} questões de LISTENING para o nível ${level} do CEFR.
-         - Como não podemos gerar áudio real, crie questões baseadas em "transcrições" de diálogos curtos.
-         - Inclua a transcrição no início do campo 'text' (Ex: "Speaker A: ... Speaker B: ... \n\nQuestion: ...").
-         - Retorne APENAS um JSON Array.`;
+         prompt = `Generate ${count} LISTENING questions for CEFR level ${level}.
+         - Since we cannot generate real audio, create questions based on "transcripts" of short dialogues.
+         - Include the transcript at the beginning of the 'text' field (e.g., "Speaker A: ... Speaker B: ... \n\nQuestion: ...").
+         - Return ONLY a JSON Array. Ensure content is in ENGLISH.`;
       } else {
-         prompt = `Gere ${count} questões de ${section} para o nível ${level} do CEFR.
-         Tema: ${topic || 'Variado'}.
-         Nível de exigência: Alto (Oxford/Cambridge style).
-         Retorne APENAS um JSON Array.`;
+         prompt = `Generate ${count} ${section} questions for CEFR level ${level}.
+         Topic: ${topic || 'Varied'}.
+         Rigor level: High (Oxford/Cambridge style).
+         Return ONLY a JSON Array. Ensure content is in ENGLISH.`;
       }
 
       prompt += `
-      Estrutura JSON Obrigatória:
+      Mandatory JSON Structure:
       [
         {
           "level": "${level}",
           "section": "${section}",
-          "text": "Enunciado ou Texto + Pergunta",
-          "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
+          "text": "Instruction or Text + Question",
+          "options": ["Option A", "Option B", "Option C", "Option D"],
           "correctAnswerIndex": 0, // 0-3
-          "subQuestions": [] // Opcional, apenas para Matching
+          "subQuestions": [] // Optional, only for Matching
         }
       ]
       `;
@@ -384,7 +385,7 @@ const Admin: React.FC = () => {
       const aggregator: Question[] = [];
       for (const q of parsed) {
          const opts = Array.isArray(q.options) ? q.options.slice(0, 4) : [];
-         while (opts.length < 4) opts.push(`Opção ${opts.length + 1}`);
+         while (opts.length < 4) opts.push(`Option ${opts.length + 1}`);
          
          let idx = typeof (q as any).correctAnswerIndex === 'number' ? (q as any).correctAnswerIndex : 0;
          if (idx < 0) idx = 0; if (idx > 3) idx = 3;
@@ -420,14 +421,14 @@ const Admin: React.FC = () => {
         
         setShowAiGeneratorModal(false);
         setAiGenConfig({ ...aiGenConfig, topic: '' }); 
-        alert(`${aggregator.length} questões geradas e salvas com sucesso!`);
+        alert(`${aggregator.length} questions generated and saved successfully!`);
       } else {
-        alert('Nenhuma questão foi gerada. Tente novamente.');
+        alert('No questions generated. Please try again.');
       }
 
     } catch (error) {
       console.error(error);
-      alert('Erro ao gerar questões. Verifique a API Key.');
+      alert('Error generating questions. Check API Key.');
     } finally {
       setIsAiProcessing(false);
     }
@@ -463,7 +464,7 @@ const Admin: React.FC = () => {
   };
 
   const handleUnlockCandidate = async (email: string) => {
-    if (!window.confirm(`DESBLOQUEAR CANDIDATO?\n\nIsso permitirá que ${email} refaça a prova imediatamente, ignorando o período de carência.\n\nO histórico anterior (nota/reprovação) será limpo.`)) return;
+    if (!window.confirm(`UNLOCK CANDIDATE?\n\nThis will allow ${email} to retake the exam immediately, bypassing the waiting period.\n\nPrevious history (score/failure) will be cleared.`)) return;
 
     const updated = candidates.map(u => {
       if (u.email === email) {
@@ -480,11 +481,11 @@ const Admin: React.FC = () => {
     
     setCandidates(updated);
     await storageService.saveUsers(updated);
-    alert('Candidato desbloqueado com sucesso!');
+    alert('Candidate unlocked successfully!');
   };
 
   const handleResetSales = async () => {
-    if (!window.confirm('ATENÇÃO: LIMPEZA TOTAL (RESET DE FÁBRICA)\n\nIsso EXCLUIRÁ PERMANENTEMENTE todos os candidatos registrados e o histórico financeiro.\n\nO sistema voltará ao estado inicial (sem alunos).\n\nDeseja continuar?')) return;
+    if (!window.confirm('WARNING: FACTORY RESET\n\nThis will PERMANENTLY DELETE all registered candidates and financial history.\n\nThe system will return to initial state (no students).\n\nDo you want to continue?')) return;
 
     const updated: User[] = [];
     setCandidates(updated);
@@ -495,13 +496,13 @@ const Admin: React.FC = () => {
   const exportFinancialReport = () => {
     const { filtered, totalRevenue } = getFinancialData();
     const csvContent = [
-      ['Data', 'Candidato', 'Email', 'Valor', 'Status'],
+      ['Date', 'Candidate', 'Email', 'Value', 'Status'],
       ...filtered.map(c => [
         new Date(c.purchaseDate!).toLocaleDateString(),
         c.fullName || 'N/A',
         c.email,
         UNIFIED_EXAM_PRICE.toFixed(2),
-        'Pago'
+        'Paid'
       ]),
       ['', '', 'TOTAL', totalRevenue.toFixed(2), '']
     ].map(e => e.join(',')).join('\n');
@@ -510,7 +511,7 @@ const Admin: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `relatorio_financeiro_${financialPeriod}.csv`);
+    link.setAttribute('download', `financial_report_${financialPeriod}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -533,14 +534,14 @@ const Admin: React.FC = () => {
         {/* HEADER MODERNO */}
         <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-16">
           <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-            <h1 className="text-4xl font-black text-[#0F172A] tracking-tight">Portal de Gestão</h1>
-            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-3">Repositório de Exames CEFR</p>
+            <h1 className="text-4xl font-black text-[#0F172A] tracking-tight">Management Portal</h1>
+            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-3">CEFR Exam Repository</p>
           </div>
           <div className="flex bg-white p-1 rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
-            <button onClick={() => setActiveTab('questions')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'questions' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Questões</button>
-            <button onClick={() => setActiveTab('ai-import')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ai-import' ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>IA Import</button>
-            <button onClick={() => setActiveTab('sales')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sales' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Alunos</button>
-            <button onClick={() => setActiveTab('finance')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'finance' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Financeiro</button>
+            <button onClick={() => setActiveTab('questions')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'questions' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Questions</button>
+            <button onClick={() => setActiveTab('ai-import')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ai-import' ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>AI Import</button>
+            <button onClick={() => setActiveTab('sales')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sales' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Students</button>
+            <button onClick={() => setActiveTab('finance')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'finance' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Finance</button>
             <button onClick={() => setActiveTab('settings')} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-[#0F172A] text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Layout</button>
           </div>
         </div>
@@ -552,27 +553,27 @@ const Admin: React.FC = () => {
               {/* ROW 1: ACTIONS (Aligned Right) */}
               <div className="flex flex-wrap items-center justify-end gap-3 w-full">
                 <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-[#0F172A] text-white px-6 py-2 rounded-[1rem] font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 group">
-                  <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" /> Adicionar Registro
+                  <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" /> Add Record
                 </button>
                 <button onClick={() => setShowAiGeneratorModal(true)} className="bg-indigo-600 text-white px-6 py-2 rounded-[1rem] font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95">
-                  <Sparkles className="w-3.5 h-3.5" /> Gerar com IA
+                  <Sparkles className="w-3.5 h-3.5" /> Generate with AI
                 </button>
-                <button onClick={() => { const all = Object.fromEntries(questions.map(q => [q.id, true])); setSelected(all); }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Selecionar Todas</button>
-                <button onClick={handleDeleteSelected} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Excluir Selecionadas</button>
-                <button onClick={handleDeleteAll} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Excluir Todas</button>
+                <button onClick={() => { const all = Object.fromEntries(questions.map(q => [q.id, true])); setSelected(all); }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Select All</button>
+                <button onClick={handleDeleteSelected} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Delete Selected</button>
+                <button onClick={handleDeleteAll} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Delete All</button>
               </div>
 
               {/* ROW 2: FILTERS & SEARCH (Full Width) */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-0.5 rounded-[1.5rem] border border-slate-200 shadow-sm w-full">
                 <div className="flex items-center gap-1 overflow-x-auto max-w-full p-1 scrollbar-hide">
-                 <button onClick={() => setFilterLevel('ALL')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filterLevel === 'ALL' ? 'bg-[#0F172A] text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}>Todos</button>
+                 <button onClick={() => setFilterLevel('ALL')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filterLevel === 'ALL' ? 'bg-[#0F172A] text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}>All</button>
                  {Object.values(ProficiencyLevel).map(lvl => {
                    const styles = getLevelStyles(lvl);
                    return (
                      <button 
                        key={lvl} 
                        onClick={() => setFilterLevel(lvl)} 
-                       className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-transparent ${filterLevel === lvl ? `${styles.bg} ${styles.text} border-current shadow-sm` : 'text-slate-400 hover:bg-slate-50'}`}
+                       className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-transparent ${filterLevel === lvl ? `${styles.sqBg} ${styles.sqText} border-current shadow-sm` : 'text-slate-400 hover:bg-slate-50'}`}
                       >
                         {lvl}
                       </button>
@@ -586,15 +587,15 @@ const Admin: React.FC = () => {
                       {sortOrder === 'ASC' ? '1-9' : sortOrder === 'DESC' ? '9-1' : sortOrder === 'LEVEL_ASC' ? 'A-C' : 'C-A'}
                     </button>
                     <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 hidden group-hover:block z-50">
-                      <button onClick={() => setSortOrder('ASC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'ASC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Crescente (1-9)</button>
-                      <button onClick={() => setSortOrder('DESC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'DESC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Decrescente (9-1)</button>
-                      <button onClick={() => setSortOrder('LEVEL_ASC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'LEVEL_ASC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Nível (A-C)</button>
-                      <button onClick={() => setSortOrder('LEVEL_DESC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'LEVEL_DESC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Nível (C-A)</button>
+                      <button onClick={() => setSortOrder('ASC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'ASC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Ascending (1-9)</button>
+                      <button onClick={() => setSortOrder('DESC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'DESC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Descending (9-1)</button>
+                      <button onClick={() => setSortOrder('LEVEL_ASC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'LEVEL_ASC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Level (A-C)</button>
+                      <button onClick={() => setSortOrder('LEVEL_DESC')} className={`w-full text-left px-3 py-2 rounded-xl text-[9px] font-black uppercase ${sortOrder === 'LEVEL_DESC' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}>Level (C-A)</button>
                     </div>
                   </div>
                   <div className="w-px h-4 bg-slate-200 mx-2"></div>
                   <Search className="w-4 h-4 text-slate-300" />
-                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Buscar..." className="bg-transparent outline-none text-slate-700 font-medium w-32 md:w-48" />
+                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search..." className="bg-transparent outline-none text-slate-700 font-medium w-32 md:w-48" />
                 </div>
               </div>
             </div>
@@ -604,11 +605,11 @@ const Admin: React.FC = () => {
                <div className="grid grid-cols-12 gap-6 px-12 py-8 border-b border-slate-50 bg-slate-50/30">
                   <div className="col-span-2 flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                     <input type="checkbox" onChange={e => setSelected(Object.fromEntries(questions.map(q => [q.id, e.target.checked])))} className="w-4 h-4 border border-slate-300 rounded" />
-                    Nível/Seção
+                    Level/Section
                   </div>
-                  <div className="col-span-7 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Enunciado do Exame</div>
-                  <div className="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Resposta</div>
-                  <div className="col-span-2 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ações</div>
+                  <div className="col-span-7 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exam Prompt</div>
+                  <div className="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Answer</div>
+                  <div className="col-span-2 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</div>
                </div>
                <div className="divide-y divide-slate-50">
                   {filteredQuestions.map(q => {
@@ -664,7 +665,7 @@ const Admin: React.FC = () => {
                   {filteredQuestions.length === 0 && (
                     <div className="py-40 flex flex-col items-center opacity-30">
                        <Search className="w-12 h-12 mb-4" />
-                       <p className="font-black uppercase text-[10px] tracking-widest">Nenhuma questão encontrada</p>
+                       <p className="font-black uppercase text-[10px] tracking-widest">No questions found</p>
                     </div>
                   )}
                </div>
@@ -682,19 +683,19 @@ const Admin: React.FC = () => {
                 <div className="relative z-10 text-center">
                   <div className="inline-flex items-center gap-3 px-5 py-2 bg-indigo-50 rounded-full text-indigo-600 mb-10">
                     <Sparkles className="w-4 h-4 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Motor de IA</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Engine</span>
                   </div>
                   <div className="flex items-center justify-center gap-3 mb-6">
                     <button onClick={() => setAiProvider('gemini')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${aiProvider==='gemini' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>Gemini</button>
                     <button onClick={() => setAiProvider('openai')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${aiProvider==='openai' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>OpenAI</button>
                   </div>
-                  <h2 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">Importador Neural</h2>
-                  <p className="text-slate-400 font-medium mb-12 max-w-lg mx-auto leading-relaxed">Poupe tempo de curadoria. Nossa IA analisa textos brutos e gera questões estruturadas instantaneamente.</p>
+                  <h2 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">Neural Importer</h2>
+                  <p className="text-slate-400 font-medium mb-12 max-w-lg mx-auto leading-relaxed">Save curation time. Our AI analyzes raw texts and generates structured questions instantly.</p>
                   
                   <textarea 
                     value={rawContent} 
                     onChange={e => setRawContent(e.target.value)} 
-                    placeholder="Cole seu material didático ou artigo aqui..." 
+                    placeholder="Paste your teaching material or article here..." 
                     className="w-full h-80 p-10 bg-slate-50 border border-slate-200 rounded-[3rem] outline-none focus:ring-[12px] focus:ring-indigo-500/5 focus:border-indigo-500 transition-all font-medium text-slate-700 mb-10 resize-none shadow-inner" 
                   />
                   
@@ -704,7 +705,7 @@ const Admin: React.FC = () => {
                     className="w-full py-7 bg-[#0F172A] text-white font-black rounded-[2rem] hover:bg-indigo-600 transition-all shadow-2xl flex items-center justify-center gap-5 uppercase tracking-[0.3em] text-xs disabled:opacity-50 active:scale-95"
                   >
                     {isAiProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <BrainCircuit className="w-6 h-6" />}
-                    {isAiProcessing ? 'Auditando Texto...' : `Gerar Questões via ${aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
+                    {isAiProcessing ? 'Auditing Text...' : `Generate Questions via ${aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
                   </button>
                   
                   {importTotal > 0 && (
@@ -712,7 +713,7 @@ const Admin: React.FC = () => {
                       <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
                         <div className="bg-indigo-600 h-3" style={{ width: `${Math.round((importProcessed / importTotal) * 100)}%` }}></div>
                       </div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-3">{importProcessed}/{importTotal} blocos • {importAdded} questões</p>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-3">{importProcessed}/{importTotal} blocks • {importAdded} questions</p>
                     </div>
                   )}
                 </div>
@@ -724,22 +725,22 @@ const Admin: React.FC = () => {
         {activeTab === 'sales' && (
           <div className="bg-white border border-slate-100 rounded-[3rem] overflow-hidden shadow-2xl animate-in fade-in duration-500">
              <div className="px-12 py-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-slate-900">Relatório Financeiro</h3>
+                <h3 className="text-xl font-bold text-slate-900">Financial Report</h3>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                   Total: {candidates.length} alunos
+                   Total: {candidates.length} students
                 </div>
              </div>
              <div className="overflow-x-auto">
                <table className="w-full text-left min-w-[900px]">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidato</th>
-                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Pagamento</th>
-                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Certificação</th>
-                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Nível CEFR</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidate</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Status</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Certification</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">CEFR Level</th>
                       <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Breakdown (R/L/U)</th>
-                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Desempenho</th>
-                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Auditoria</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Performance</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Audit</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -751,31 +752,31 @@ const Admin: React.FC = () => {
                                 {c.fullName ? c.fullName.charAt(0) : c.email.charAt(0).toUpperCase()}
                              </div>
                              <div>
-                                <p className="text-sm font-bold text-slate-900">{c.fullName || 'Usuário'}</p>
+                                <p className="text-sm font-bold text-slate-900">{c.fullName || 'User'}</p>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{c.email}</p>
                              </div>
                           </div>
                         </td>
                         <td className="px-12 py-6">
                           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
-                             <CheckCircle2 className="w-3 h-3" /> Pago
+                             <CheckCircle2 className="w-3 h-3" /> Paid
                           </span>
                         </td>
                         <td className="px-12 py-6">
                           {c.certificateCode ? (
                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-bold uppercase tracking-widest">
-                                <Award className="w-3 h-3" /> Emitido
+                                <Award className="w-3 h-3" /> Issued
                              </span>
                           ) : c.examCompleted ? (
                              <div className="flex flex-col items-start gap-2">
                                <div className="flex items-center gap-2">
                                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-[10px] font-bold uppercase tracking-widest">
-                                    <AlertTriangle className="w-3 h-3" /> Reprovado
+                                    <AlertTriangle className="w-3 h-3" /> Failed
                                  </span>
                                  <button 
                                    onClick={() => handleUnlockCandidate(c.email)}
                                    className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
-                                   title="Desbloquear para nova tentativa"
+                                   title="Unlock for retake"
                                  >
                                     <Sparkles className="w-3 h-3" />
                                  </button>
@@ -788,14 +789,14 @@ const Admin: React.FC = () => {
                              </div>
                           ) : (
                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-bold uppercase tracking-widest">
-                                <Clock className="w-3 h-3" /> Pendente
+                                <Clock className="w-3 h-3" /> Pending
                              </span>
                           )}
                         </td>
                         <td className="px-12 py-6 text-center">
                           {c.score !== undefined ? (
                              <span className={`px-3 py-1 rounded-lg font-black text-xs ${c.score >= 85 ? 'bg-amber-100 text-amber-700' : c.score >= 60 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                               {c.score >= 85 ? 'C1' : c.score >= 60 ? 'B2' : 'Abaixo B2'}
+                               {c.score >= 85 ? 'C1' : c.score >= 60 ? 'B2' : 'Below B2'}
                              </span>
                           ) : '--'}
                         </td>
@@ -827,14 +828,14 @@ const Admin: React.FC = () => {
                           {c.screenshots && c.screenshots.length > 0 ? (
                             <div className="flex justify-end gap-1">
                               {c.screenshots.slice(0, 3).map((shot, i) => (
-                                <img key={i} src={shot} alt="Evidência" className="w-12 h-8 object-cover rounded border border-slate-200 hover:scale-150 transition-transform cursor-zoom-in" onClick={() => window.open(shot, '_blank')} />
+                                <img key={i} src={shot} alt="Evidence" className="w-12 h-8 object-cover rounded border border-slate-200 hover:scale-150 transition-transform cursor-zoom-in" onClick={() => window.open(shot, '_blank')} />
                               ))}
                               {c.screenshots.length > 3 && (
                                 <span className="w-8 h-8 flex items-center justify-center bg-slate-100 text-[9px] font-bold text-slate-500 rounded border border-slate-200">+{c.screenshots.length - 3}</span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Sem registros</span>
+                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">No Records</span>
                           )}
                         </td>
                       </tr>
@@ -857,7 +858,7 @@ const Admin: React.FC = () => {
                         onClick={() => setFinancialPeriod(p as any)}
                         className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${financialPeriod === p ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
                       >
-                        {p === 'weekly' ? 'Semanal' : p === 'monthly' ? 'Mensal' : p === 'quarterly' ? 'Trimestral' : p === 'semiannual' ? 'Semestral' : 'Anual'}
+                        {p === 'weekly' ? 'Weekly' : p === 'monthly' ? 'Monthly' : p === 'quarterly' ? 'Quarterly' : p === 'semiannual' ? 'Semiannual' : 'Annual'}
                       </button>
                    ))}
                 </div>
@@ -865,30 +866,30 @@ const Admin: React.FC = () => {
                   onClick={exportFinancialReport}
                   className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95"
                 >
-                   <Download className="w-4 h-4" /> Exportar CSV
+                   <Download className="w-4 h-4" /> Export CSV
                 </button>
                 <button 
                   onClick={handleResetSales}
                   className="px-6 py-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-all active:scale-95"
-                  title="Limpar dados de vendas (apenas para testes)"
+                  title="Clear sales data (testing only)"
                 >
-                   <Trash2 className="w-4 h-4" /> Resetar Vendas
+                   <Trash2 className="w-4 h-4" /> Reset Sales
                 </button>
              </div>
 
              {/* Stats Cards */}
              <div className="grid grid-cols-3 gap-8">
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Receita Total</p>
-                   <p className="text-4xl font-black text-slate-900">R$ {getFinancialData().totalRevenue.toFixed(2)}</p>
+                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Total Revenue</p>
+                   <p className="text-4xl font-black text-slate-900">${getFinancialData().totalRevenue.toFixed(2)}</p>
                 </div>
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Vendas</p>
+                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Sales</p>
                    <p className="text-4xl font-black text-slate-900">{getFinancialData().filtered.length}</p>
                 </div>
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Ticket Médio</p>
-                   <p className="text-4xl font-black text-slate-900">R$ {getFinancialData().filtered.length ? UNIFIED_EXAM_PRICE.toFixed(2) : '0.00'}</p>
+                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Average Ticket</p>
+                   <p className="text-4xl font-black text-slate-900">${getFinancialData().filtered.length ? UNIFIED_EXAM_PRICE.toFixed(2) : '0.00'}</p>
                 </div>
              </div>
 
@@ -896,14 +897,14 @@ const Admin: React.FC = () => {
              <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-xl">
                 <div className="flex items-center justify-between mb-12">
                    <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                      <BarChart2 className="w-6 h-6 text-indigo-600" /> Balancete Financeiro
+                      <BarChart2 className="w-6 h-6 text-indigo-600" /> Financial Balance
                    </h3>
                 </div>
                 
                 <div className="h-64 flex items-end justify-between gap-4">
                    {Object.entries(getFinancialData().chartData).length === 0 ? (
                       <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold uppercase text-xs tracking-widest">
-                         Sem dados para o período
+                         No data for period
                       </div>
                    ) : (
                       Object.entries(getFinancialData().chartData).map(([label, value], i) => {
@@ -914,7 +915,7 @@ const Admin: React.FC = () => {
                                <div className="w-full bg-indigo-50 rounded-t-2xl relative overflow-hidden group-hover:bg-indigo-100 transition-all" style={{ height: `${height}%` }}>
                                   <div className="absolute bottom-0 w-full bg-indigo-600 h-2 opacity-20"></div>
                                   <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded-lg transition-all whitespace-nowrap">
-                                     R$ {value.toFixed(2)}
+                                     ${value.toFixed(2)}
                                   </div>
                                </div>
                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
@@ -931,30 +932,30 @@ const Admin: React.FC = () => {
         {activeTab === 'settings' && (
           <div className="max-w-4xl mx-auto bg-white p-16 rounded-[4rem] border border-slate-100 shadow-2xl animate-in fade-in duration-500">
              <h2 className="text-3xl font-black text-slate-900 mb-12 flex items-center gap-5">
-               <ImageIcon className="w-10 h-10 text-indigo-600" /> Design do Certificado
+               <ImageIcon className="w-10 h-10 text-indigo-600" /> Certificate Design
              </h2>
              <div className="space-y-12">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Endpoint da Imagem de Fundo (Oxford Template)</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Background Image Endpoint (Oxford Template)</label>
                   <input 
                     type="url" 
                     value={settings.certTemplateUrl} 
                     onChange={e => setSettings({...settings, certTemplateUrl: e.target.value})} 
                     className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 font-bold text-slate-700 transition-all" 
-                    placeholder="https://exemplo.com/fundo.png" 
+                    placeholder="https://example.com/background.png" 
                   />
                 </div>
                 <button 
-                  onClick={() => { storageService.saveSettings(settings); alert('Configurações salvas!'); }} 
+                  onClick={() => { storageService.saveSettings(settings); alert('Settings saved!'); }} 
                   className="bg-[#0F172A] text-white px-14 py-6 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-indigo-600 shadow-2xl transition-all active:scale-95"
                 >
-                  Confirmar Alterações
+                  Confirm Changes
                 </button>
                 <div className="aspect-[1.414/1] bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] overflow-hidden flex items-center justify-center relative shadow-inner">
                    {settings.certTemplateUrl ? (
-                     <img src={settings.certTemplateUrl} className="w-full h-full object-contain" alt="Certificado Preview" />
+                     <img src={settings.certTemplateUrl} className="w-full h-full object-contain" alt="Certificate Preview" />
                    ) : (
-                     <p className="text-slate-300 font-black uppercase text-xs tracking-[0.4em]">Aguardando Mídia</p>
+                     <p className="text-slate-300 font-black uppercase text-xs tracking-[0.4em]">Waiting for Media</p>
                    )}
                 </div>
              </div>
@@ -969,9 +970,9 @@ const Admin: React.FC = () => {
             <div className="flex justify-between items-start mb-16">
               <div>
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">
-                  {editingQuestion ? 'Configurar Questão' : 'Novo Registro'}
+                  {editingQuestion ? 'Configure Question' : 'New Record'}
                 </h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">Infraestrutura de Avaliação CEFR</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">CEFR Evaluation Infrastructure</p>
               </div>
               <button onClick={() => setShowModal(false)} className="p-4 hover:bg-slate-100 rounded-full transition-all active:scale-90">
                 <X className="w-7 h-7 text-slate-300" />
@@ -981,7 +982,7 @@ const Admin: React.FC = () => {
             <form onSubmit={handleSaveQuestion} className="space-y-12">
               <div className="grid grid-cols-2 gap-10">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nível de Dificuldade</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Difficulty Level</label>
                   <div className="relative">
                     <select value={formData.level} onChange={e => setFormData({...formData, level: e.target.value as ProficiencyLevel})} className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl font-black text-slate-900 outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-600 transition-all appearance-none cursor-pointer">
                       {Object.values(ProficiencyLevel).map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
@@ -990,7 +991,7 @@ const Admin: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Competência Alvo</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Target Competency</label>
                   <div className="relative">
                     <select value={formData.section} onChange={e => setFormData({...formData, section: e.target.value as SectionType})} className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl font-black text-slate-900 outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-600 transition-all appearance-none cursor-pointer">
                       {Object.values(SectionType).map(s => <option key={s} value={s}>{s}</option>)}
@@ -1003,24 +1004,24 @@ const Admin: React.FC = () => {
               {(formData.section === SectionType.LISTENING) && (
                 <div className="space-y-4 animate-in slide-in-from-top-4 duration-500">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2 flex items-center gap-2">
-                    <Music className="w-4 h-4 text-indigo-600" /> Recurso de Áudio (URL Direta)
+                    <Music className="w-4 h-4 text-indigo-600" /> Audio Resource (Direct URL)
                   </label>
                   <div className="relative">
                     <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                    <input type="url" value={formData.audioUrl} onChange={e => { setFormData({...formData, audioUrl: e.target.value}); }} className="w-full p-6 pl-16 bg-slate-50 border border-slate-200 rounded-3xl font-bold outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all" placeholder="https://cdn.exemplo.com/audio.mp3" />
+                    <input type="url" value={formData.audioUrl} onChange={e => { setFormData({...formData, audioUrl: e.target.value}); }} className="w-full p-6 pl-16 bg-slate-50 border border-slate-200 rounded-3xl font-bold outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all" placeholder="https://cdn.example.com/audio.mp3" />
                   </div>
                 </div>
               )}
 
               <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Corpo do Enunciado</label>
-                <textarea required value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full p-10 bg-slate-50 border border-slate-200 rounded-[2.5rem] h-48 font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 transition-all leading-relaxed shadow-inner" placeholder="Escreva a pergunta ou contexto do exame..." />
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prompt Body</label>
+                <textarea required value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full p-10 bg-slate-50 border border-slate-200 rounded-[2.5rem] h-48 font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 transition-all leading-relaxed shadow-inner" placeholder="Write the question or exam context..." />
               </div>
               
               <div className="space-y-8">
                 <div className="flex items-center justify-between px-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400">Gabarito e Alternativas</label>
-                  <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-3"><CheckCircle2 className="w-4 h-4" /> Selecione a resposta oficial</span>
+                  <label className="text-[10px] font-black uppercase text-slate-400">Answer Key & Alternatives</label>
+                  <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-3"><CheckCircle2 className="w-4 h-4" /> Select official answer</span>
                 </div>
                 
                 {formData.options?.map((opt, i) => (
@@ -1038,7 +1039,7 @@ const Admin: React.FC = () => {
                         onClick={e => e.stopPropagation()}
                         onChange={e => { const n = [...formData.options!]; n[i] = e.target.value; setFormData({...formData, options: n}); }} 
                         className="flex-grow bg-transparent outline-none font-black text-slate-800" 
-                        placeholder={`Opção ${String.fromCharCode(65+i)}`}
+                        placeholder={`Option ${String.fromCharCode(65+i)}`}
                       />
                       {formData.correctAnswer === i && (
                         <div className="absolute right-6 top-1/2 -translate-y-1/2 animate-in zoom-in duration-300">
@@ -1051,8 +1052,8 @@ const Admin: React.FC = () => {
               </div>
 
               <div className="pt-12 flex flex-col sm:flex-row gap-6">
-                <button type="submit" className="flex-grow py-7 bg-[#0F172A] text-white font-black rounded-[2rem] uppercase tracking-[0.3em] text-xs hover:bg-indigo-600 transition-all shadow-2xl active:scale-95">Salvar na Base de Dados</button>
-                <button type="button" onClick={() => setShowModal(false)} className="px-14 py-7 border border-slate-200 text-slate-400 font-bold rounded-[2rem] uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-colors">Descartar</button>
+                <button type="submit" className="flex-grow py-7 bg-[#0F172A] text-white font-black rounded-[2rem] uppercase tracking-[0.3em] text-xs hover:bg-indigo-600 transition-all shadow-2xl active:scale-95">Save to Database</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-14 py-7 border border-slate-200 text-slate-400 font-bold rounded-[2rem] uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-colors">Discard</button>
               </div>
             </form>
           </div>
@@ -1067,12 +1068,12 @@ const Admin: React.FC = () => {
               <div>
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full mb-4">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">IA Generativa</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Generative AI</span>
                 </div>
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">
-                  Gerador de Questões
+                  Question Generator
                 </h3>
-                <p className="text-slate-400 font-medium mt-2 leading-relaxed">Defina os parâmetros e deixe a IA criar conteúdo inédito para seus exames.</p>
+                <p className="text-slate-400 font-medium mt-2 leading-relaxed">Define parameters and let AI create fresh content for your exams.</p>
               </div>
               <button onClick={() => setShowAiGeneratorModal(false)} className="p-4 hover:bg-slate-100 rounded-full transition-all active:scale-90">
                 <X className="w-7 h-7 text-slate-300" />
@@ -1082,7 +1083,7 @@ const Admin: React.FC = () => {
             <div className="space-y-8">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nível Alvo</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Target Level</label>
                   <div className="relative">
                     <select 
                       value={aiGenConfig.level} 
@@ -1095,7 +1096,7 @@ const Admin: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Tipo de Questão</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Question Type</label>
                   <div className="relative">
                     <select 
                       value={aiGenConfig.section} 
@@ -1110,17 +1111,17 @@ const Admin: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Tópico ou Contexto (Opcional)</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Topic or Context (Optional)</label>
                 <input 
                   value={aiGenConfig.topic} 
                   onChange={e => setAiGenConfig({...aiGenConfig, topic: e.target.value})} 
-                  placeholder="Ex: Business Meetings, Environment, Travel..." 
+                  placeholder="e.g. Business Meetings, Environment, Travel..." 
                   className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 transition-all shadow-inner" 
                 />
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Quantidade de Questões</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Quantity</label>
                 <div className="flex items-center gap-4">
                   {[1, 3, 5, 10].map(n => (
                     <button 
@@ -1141,10 +1142,10 @@ const Admin: React.FC = () => {
                   className="flex-grow py-6 bg-[#0F172A] text-white font-black rounded-[2rem] uppercase tracking-[0.3em] text-xs hover:bg-indigo-600 transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   {isAiProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                  {isAiProcessing ? 'Criando Conteúdo...' : 'Gerar Questões'}
+                  {isAiProcessing ? 'Creating Content...' : 'Generate Questions'}
                 </button>
                 <button onClick={() => setShowAiGeneratorModal(false)} className="px-10 py-6 border border-slate-200 text-slate-400 font-bold rounded-[2rem] uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-colors">
-                  Cancelar
+                  Cancel
                 </button>
               </div>
             </div>

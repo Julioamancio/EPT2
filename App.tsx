@@ -13,6 +13,7 @@ import Verify from './pages/Verify';
 import Admin from './pages/Admin';
 import AdminLogin from './pages/AdminLogin';
 import Dashboard from './pages/Dashboard';
+import Policies from './pages/Policies';
 import { AuthState, ProficiencyLevel, User } from './types';
 import { ADMIN_CREDENTIALS } from './constants';
 import { storageService } from './services/storageService';
@@ -128,6 +129,7 @@ const App: React.FC = () => {
             />
             
             <Route path="/verificar" element={<Verify />} />
+            <Route path="/politicas" element={<Policies />} />
             
             {/* Admin Routes */}
             <Route 
@@ -146,8 +148,10 @@ const App: React.FC = () => {
         <footer className="bg-white border-t border-slate-200 py-12">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-              <div className="text-slate-400 text-sm">
-                &copy; {new Date().getFullYear()} English Proficiency Certificates. Todos os direitos reservados.
+              <div className="text-slate-400 text-sm flex items-center gap-4">
+                <span>&copy; {new Date().getFullYear()} English Proficiency Certificates. All rights reserved.</span>
+                <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                <Link to="/politicas" className="hover:text-indigo-600 transition-colors">Terms & Policies</Link>
               </div>
               
               <div className="flex items-center gap-8">

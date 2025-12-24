@@ -14,10 +14,10 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [timeLeft, setTimeLeft] = useState(99999); // Valor alto inicial para evitar timeout prematuro
+  const [timeLeft, setTimeLeft] = useState(99999); // High initial value to avoid premature timeout
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [annulled, setAnnulled] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false); // Novo estado para controle de início
+  const [hasStarted, setHasStarted] = useState(false); // New state for start control
   const [capturedScreenshots, setCapturedScreenshots] = useState<string[]>([]);
   const [setupTimeLeft, setSetupTimeLeft] = useState(120);
   const [setupExpired, setSetupExpired] = useState(false);
@@ -42,14 +42,14 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Countdown para iniciar o exame em tela cheia (apenas Desktop)
+  // Countdown to start full screen exam (Desktop only)
   useEffect(() => {
     if (hasStarted || setupExpired || isMobile) return;
     
     const timer = setInterval(() => {
       setSetupTimeLeft(prev => {
-        // Proteção: Não permite expirar nos primeiros 5 segundos de carregamento
-        // Isso evita anulações instantâneas por delay de renderização ou estado
+        // Protection: Do not expire in the first 5 seconds of loading
+        // This prevents instant annulments due to render delay or state
         if (Date.now() - mountTimeRef.current < 5000) {
            return prev; 
         }
@@ -67,7 +67,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
 
   const getQuestionDuration = (q: Question) => {
     if (q.subQuestions && q.subQuestions.length > 0) {
-      return q.subQuestions.length * 45; // 45s por item em Matching
+      return q.subQuestions.length * 45; // 45s per item in Matching
     }
     switch (q.section) {
       case SectionType.READING: return 300; // 5 min
@@ -77,11 +77,11 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
     }
   };
 
-  // Função para capturar screenshot do stream
+  // Function to capture screenshot from stream
   const captureScreen = useCallback(() => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
-      // Reduzir resolução para economizar storage (max 640px largura)
+      // Reduce resolution to save storage (max 640px width)
       const scale = 640 / videoRef.current.videoWidth;
       canvas.width = 640;
       canvas.height = videoRef.current.videoHeight * scale;
@@ -89,25 +89,25 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        // Compressão JPEG 0.5
+        // JPEG compression 0.5
         const base64 = canvas.toDataURL('image/jpeg', 0.5);
         setCapturedScreenshots(prev => [...prev, base64]);
       }
     }
   }, []);
 
-  // Iniciar compartilhamento de tela e tela cheia
+  // Start screen sharing and full screen
   const handleStartSecureSession = async () => {
     try {
-      // 1. Tentar Tela Cheia
+      // 1. Try Full Screen
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen().catch(err => {
-          console.warn("Tela cheia bloqueada ou não suportada:", err);
-          // Não bloqueamos se falhar, mas é ideal avisar
+          console.warn("Full screen blocked or not supported:", err);
+          // We don't block if it fails, but it's ideal to warn
         });
       }
 
-      // 2. Solicitar Compartilhamento
+      // 2. Request Sharing
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { cursor: "always" },
         audio: false
@@ -119,25 +119,25 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
       }
       streamRef.current = stream;
       
-      // Monitorar se o usuário para o compartilhamento manualmente
+      // Monitor if user manually stops sharing
       stream.getVideoTracks()[0].onended = () => {
-         // Apenas avisa, mas permite continuar
-         console.warn("Compartilhamento de tela interrompido pelo usuário.");
+         // Just warn, but allow continuing
+         console.warn("Screen sharing stopped by user.");
       };
 
       setHasStarted(true);
     } catch (err) {
-      alert("É obrigatório conceder as permissões (Tela Cheia + Compartilhamento) para realizar o exame. Tente novamente.");
+      alert("It is mandatory to grant permissions (Full Screen + Sharing) to take the exam. Please try again.");
     }
   };
 
-  // Função central de finalização
+  // Central submission function
   const processSubmit = useCallback((forcedScore?: number, failureReason?: string) => {
     if (submissionRef.current) return;
     submissionRef.current = true;
     setIsSubmitting(true);
     
-    // Parar stream
+    // Stop stream
     if (streamRef.current) {
        streamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -171,10 +171,10 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
         finalScore = Math.round((correct / (totalItems || 1)) * 100);
       }
       
-      const passed = finalScore >= 60; // Limite de aprovação B2
+      const passed = finalScore >= 60; // B2 approval limit
       let reason = failureReason;
       if (!passed && !reason) {
-        reason = 'Desempenho Insuficiente (< 60%)';
+        reason = 'Insufficient Performance (< 60%)';
       }
 
       const updatedUsers = users.map(u => 
@@ -186,8 +186,8 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
           totalQuestions: totalItems,
           failureReason: reason,
           certificateCode: passed && !reason ? Math.random().toString(36).substr(2, 9).toUpperCase() : undefined,
-          screenshots: capturedScreenshots, // Salva as evidências
-          lastExamDate: Date.now() // Registra data do exame para bloqueio de 30 dias
+          screenshots: capturedScreenshots, // Save evidence
+          lastExamDate: Date.now() // Register exam date for 30-day block
         } : u
       );
       storageService.saveUsers(updatedUsers);
@@ -197,12 +197,12 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
     }, 2000);
   }, [questions, answers, currentUser, onComplete, navigate, capturedScreenshots]);
 
-  // Sistema de Integridade (Proctoring)
+  // Integrity System (Proctoring)
   useEffect(() => {
     if (!hasStarted) return; 
-    // Rigor removido conforme solicitado:
-    // Não há mais anulação por troca de aba ou foco.
-    // Apenas monitoramento via screenshots.
+    // Strictness removed as requested:
+    // No more annulment for tab switching or focus loss.
+    // Only monitoring via screenshots.
   }, [hasStarted]);
 
   useEffect(() => {
@@ -217,11 +217,11 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   }, [currentIndex, questions, hasStarted]);
 
   const handleNext = useCallback((isTimeout = false) => {
-    // Captura evidência ao avançar
+    // Capture evidence when advancing
     captureScreen();
 
     if (isTimeout && questions[currentIndex]) {
-       // Se o tempo acabou, removemos as respostas da questão atual para contar como "em branco"
+       // If time ran out, remove answers for current question to count as "blank"
        const q = questions[currentIndex];
        setAnswers(prev => {
          const next = { ...prev };
@@ -242,7 +242,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   }, [currentIndex, questions, processSubmit]);
 
   useEffect(() => {
-    if (!hasStarted) return; // Não inicia timer de questão antes do setup
+    if (!hasStarted) return; // Do not start question timer before setup
     
     if (timeLeft <= 0 && questions.length > 0) { 
       handleNext(true); 
@@ -253,7 +253,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   }, [timeLeft, handleNext, questions.length, hasStarted]);
 
   const handleSubmitRequest = () => {
-    if (window.confirm('Deseja finalizar o exame agora? Questões não respondidas não serão pontuadas.')) {
+    if (window.confirm('Do you wish to finish the exam now? Unanswered questions will not be scored.')) {
       processSubmit();
     }
   };
@@ -261,7 +261,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
   if (questions.length === 0) return (
     <div className="flex flex-col items-center py-40 gap-4">
       <Loader2 className="animate-spin text-indigo-600 w-10 h-10" />
-      <p className="font-bold text-slate-400">Configurando ambiente seguro...</p>
+      <p className="font-bold text-slate-400">Configuring secure environment...</p>
     </div>
   );
 
@@ -271,10 +271,10 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
         <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
            <div className="text-center space-y-6">
               <ShieldAlert className="w-24 h-24 text-red-600 mx-auto" />
-              <h1 className="text-4xl font-black text-red-900">Exame Anulado</h1>
-              <p className="text-red-700 font-bold max-w-md mx-auto">Você não iniciou o modo de tela cheia dentro do limite de 120 segundos.</p>
+              <h1 className="text-4xl font-black text-red-900">Exam Annulled</h1>
+              <p className="text-red-700 font-bold max-w-md mx-auto">You did not start full screen mode within the 120-second limit.</p>
               <button onClick={() => window.location.reload()} className="px-8 py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-all uppercase tracking-widest text-xs">
-                Reiniciar Processo
+                Restart Process
               </button>
            </div>
         </div>
@@ -287,19 +287,19 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
            {/* Timer Badge - Only for Desktop */}
            {!isMobile && (
              <div className="bg-red-50 border-b border-red-100 p-6 text-center animate-pulse">
-                <p className="text-red-600 font-black uppercase tracking-widest text-xs mb-2">Tempo Restante para Configuração</p>
+                <p className="text-red-600 font-black uppercase tracking-widest text-xs mb-2">Time Remaining for Setup</p>
                 <div className="text-5xl font-black text-red-600 tabular-nums tracking-tighter">
                   {Math.floor(setupTimeLeft / 60)}:{(setupTimeLeft % 60).toString().padStart(2, '0')}
                 </div>
-                <p className="text-red-400 font-bold text-[10px] mt-2 uppercase tracking-wide">Se este contador zerar, o exame será anulado.</p>
+                <p className="text-red-400 font-bold text-[10px] mt-2 uppercase tracking-wide">If this counter reaches zero, the exam will be annulled.</p>
              </div>
            )}
 
            <div className="p-8 lg:p-12 space-y-8">
               <div className="text-center space-y-4">
-                 <h1 className="text-3xl font-black text-slate-900 tracking-tight">Ambiente Seguro Obrigatório</h1>
+                 <h1 className="text-3xl font-black text-slate-900 tracking-tight">Secure Environment Required</h1>
                  <p className="text-slate-500 font-medium leading-relaxed">
-                   {isMobile ? 'Para iniciar o exame, clique no botão abaixo.' : 'Você precisa ativar o modo de tela cheia para prosseguir.'}
+                   {isMobile ? 'To start the exam, click the button below.' : 'You need to activate full screen mode to proceed.'}
                  </p>
               </div>
 
@@ -307,7 +307,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
                 <div className="space-y-4">
                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-4">
                       <p className="text-slate-800 font-bold text-sm uppercase tracking-wide">
-                        Pressione o botão abaixo ou use o atalho:
+                        Press the button below or use the shortcut:
                       </p>
                       <div className="flex justify-center gap-4">
                          <div className="flex flex-col items-center">
@@ -328,11 +328,11 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
                    onClick={isMobile ? () => setHasStarted(true) : handleStartSecureSession}
                    className="w-full py-6 bg-[#0F172A] text-white font-black rounded-2xl uppercase tracking-[0.2em] text-sm hover:bg-indigo-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
                  >
-                   <Shield className="w-6 h-6" /> {isMobile ? 'Iniciar Agora' : 'ATIVAR TELA CHEIA E INICIAR'}
+                   <Shield className="w-6 h-6" /> {isMobile ? 'Start Now' : 'ACTIVATE FULL SCREEN AND START'}
                  </button>
                  {!isMobile && (
                    <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">
-                     O sistema tentará ativar automaticamente ao clicar.
+                     The system will attempt to activate automatically upon clicking.
                    </p>
                  )}
               </div>
@@ -352,7 +352,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
       <div className="bg-white border-b border-slate-100 p-6 rounded-t-[2.5rem] shadow-sm flex items-center justify-between sticky top-20 z-40">
         <div>
           <h1 className="font-black text-slate-900 flex items-center gap-2 uppercase text-xs tracking-widest">
-            <Shield className="w-4 h-4 text-indigo-600" /> Proctoring Ativo
+            <Shield className="w-4 h-4 text-indigo-600" /> Proctoring Active
           </h1>
           <p className="text-[10px] font-bold text-slate-400 mt-1">{currentUser.email}</p>
         </div>
@@ -366,7 +366,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
             disabled={isSubmitting || annulled}
             className="bg-red-500 text-white px-6 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg disabled:opacity-50"
           >
-            Finalizar Exame
+            Finish Exam
           </button>
         </div>
       </div>
@@ -376,8 +376,8 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
            <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center gap-6">
              {annulled ? <ShieldAlert className="w-16 h-16 text-red-600 animate-bounce" /> : <Loader2 className="w-16 h-16 text-indigo-600 animate-spin" />}
              <div className="text-center">
-               <h3 className={`text-2xl font-black ${annulled ? 'text-red-600' : 'text-slate-900'}`}>{annulled ? 'Exame Anulado' : 'Auditando Respostas'}</h3>
-               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">{annulled ? 'Quebra de foco detectada' : 'Gerando certificado CEFR...'}</p>
+               <h3 className={`text-2xl font-black ${annulled ? 'text-red-600' : 'text-slate-900'}`}>{annulled ? 'Exam Annulled' : 'Auditing Responses'}</h3>
+               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">{annulled ? 'Focus loss detected' : 'Generating CEFR certificate...'}</p>
              </div>
            </div>
         )}
@@ -385,7 +385,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
         <div className="p-10 lg:p-16">
           <div className="flex items-center gap-4 mb-10">
             <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500">{q.level} • {q.section}</span>
-            <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Questão {currentIndex+1}/{questions.length}</span>
+            <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Question {currentIndex+1}/{questions.length}</span>
           </div>
 
           {q.section === SectionType.LISTENING && q.audioUrl && (
@@ -402,7 +402,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* LEGEND FOR MATCHING */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Opções Disponíveis</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Available Options</h4>
                 <div className="flex flex-wrap gap-3">
                   {q.options.map((opt, i) => (
                     <div key={i} className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
@@ -459,7 +459,7 @@ const Exam: React.FC<ExamProps> = ({ currentUser, onComplete }) => {
              onClick={() => handleNext(false)} 
              className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-colors flex items-center gap-2"
           >
-            {currentIndex === questions.length - 1 ? 'Finalizar Exame' : 'Próxima Questão'} <ChevronRight className="w-4 h-4" />
+            {currentIndex === questions.length - 1 ? 'Finish Exam' : 'Next Question'} <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

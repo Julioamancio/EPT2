@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, Loader2, AlertCircle, ShieldCheck, Lock, User as UserIcon, HelpCircle, Eye, EyeOff } from 'lucide-react';
@@ -33,7 +32,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           navigate('/prova');
         }
       } else {
-        setError('As credenciais informadas não coincidem com nossos registros.');
+        setError('Credentials do not match our records.');
         setLoading(false);
       }
     }, 1200);
@@ -47,8 +46,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-50 rounded-[2rem] mb-6 border border-indigo-100 shadow-sm">
             <Lock className="text-indigo-600 w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Portal do Candidato</h1>
-          <p className="text-slate-500 mt-3 font-medium">Acesse sua área de avaliação oficial</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Candidate Portal</h1>
+          <p className="text-slate-500 mt-3 font-medium">Access your official evaluation area</p>
         </div>
 
         {/* Login Card */}
@@ -65,7 +64,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">E-mail de Acesso</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Access Email</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <UserIcon className="h-5 w-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
@@ -76,17 +75,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 font-medium placeholder-slate-300 focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all"
-                  placeholder="exemplo@email.com"
+                  placeholder="example@email.com"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Senha</label>
-                {/* Fixed: Removed invalid 'placeholder' prop from Link component */}
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Password</label>
                 <Link to="/forgot-password" className="text-xs text-indigo-600 hover:text-indigo-800 font-bold transition-colors">
-                  Esqueceu a senha?
+                  Forgot Password?
                 </Link>
               </div>
               <div className="relative group">
@@ -119,11 +117,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Validando Acesso...</span>
+                  <span>Validating Access...</span>
                 </>
               ) : (
                 <>
-                  <span>Entrar no Portal</span>
+                  <span>Enter Portal</span>
                   <LogIn className="w-5 h-5" />
                 </>
               )}
@@ -138,7 +136,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
               <HelpCircle className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Suporte 24h</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">24h Support</span>
             </div>
           </div>
         </div>
@@ -146,7 +144,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {/* Back to Home */}
         <div className="mt-8 text-center">
           <Link to="/" className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2">
-            Voltar para a página inicial
+            Back to Home
           </Link>
         </div>
       </div>

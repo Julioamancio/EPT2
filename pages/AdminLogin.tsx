@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, Loader2, AlertCircle, ArrowLeft, Key, User as UserIcon, Eye, EyeOff } from 'lucide-react';
@@ -24,7 +23,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       if (onLogin(username, password)) {
         navigate('/admin');
       } else {
-        setError('Acesso negado. Credenciais administrativas inválidas.');
+        setError('Access denied. Invalid administrative credentials.');
         setLoading(false);
       }
     }, 1200);
@@ -41,7 +40,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       <div className="w-full max-w-[440px] relative z-10">
         <Link to="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-all text-sm font-bold mb-8 group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Voltar ao Portal Público
+          Back to Public Portal
         </Link>
 
         <div className="bg-white rounded-[2.5rem] shadow-[0_20px_70px_-10px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
@@ -51,7 +50,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Console</h1>
-              <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] mt-2">Área Restrita / Gestão Acadêmica</p>
+              <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] mt-2">Restricted Area / Academic Management</p>
             </div>
 
             {error && (
@@ -63,7 +62,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Usuário Mestre</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Master User</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <UserIcon className="h-5 w-5 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
@@ -80,7 +79,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Chave de Acesso</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Access Key</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Key className="h-5 w-5 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
@@ -111,11 +110,11 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Autenticando...</span>
+                    <span>Authenticating...</span>
                   </>
                 ) : (
                   <>
-                    <span>Entrar no Sistema</span>
+                    <span>Enter System</span>
                   </>
                 )}
               </button>
@@ -124,7 +123,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           
           <div className="bg-slate-50 p-6 border-t border-slate-100 text-center">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-              Sessão protegida por criptografia de ponta-a-ponta
+              Session protected by end-to-end encryption
             </p>
           </div>
         </div>

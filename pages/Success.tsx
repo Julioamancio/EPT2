@@ -8,7 +8,7 @@ const Success: React.FC = () => {
   const [displayData, setDisplayData] = React.useState({
     email: searchParams.get('email') || '',
     pwd: searchParams.get('pwd') || '',
-    level: searchParams.get('level') || 'Unificado B2/C1'
+    level: searchParams.get('level') || 'Unified B2/C1'
   });
 
   React.useEffect(() => {
@@ -32,7 +32,7 @@ const Success: React.FC = () => {
         setDisplayData({
             email: pendingUser.email,
             pwd: pendingUser.password,
-            level: 'Unificado B2/C1'
+            level: 'Unified B2/C1'
         });
         
         // Clear pending data to prevent re-processing? 
@@ -49,9 +49,9 @@ const Success: React.FC = () => {
   if (!email || !pwd) {
      return (
         <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Aguardando Confirmação...</h1>
-            <p className="text-slate-600">Se você acabou de realizar o pagamento, aguarde um momento ou verifique seu e-mail.</p>
-            <Link to="/" className="mt-8 inline-block text-indigo-600 font-bold hover:underline">Voltar para Home</Link>
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">Awaiting Confirmation...</h1>
+            <p className="text-slate-600">If you just made the payment, please wait a moment or check your email.</p>
+            <Link to="/" className="mt-8 inline-block text-indigo-600 font-bold hover:underline">Back to Home</Link>
         </div>
      );
   }
@@ -61,32 +61,32 @@ const Success: React.FC = () => {
       <div className="bg-emerald-100 text-emerald-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8">
         <PartyPopper className="w-10 h-10" />
       </div>
-      <h1 className="text-4xl font-bold text-slate-900 mb-4">Pagamento Confirmado!</h1>
-      <p className="text-lg text-slate-600 mb-12">Sua jornada rumo à certificação {level} começou. Enviamos os detalhes também para seu e-mail.</p>
+      <h1 className="text-4xl font-bold text-slate-900 mb-4">Payment Confirmed!</h1>
+      <p className="text-lg text-slate-600 mb-12">Your journey towards {level} certification has begun. We have also sent the details to your email.</p>
       
       <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-left mb-12">
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-          <Lock className="w-5 h-5 text-indigo-600" /> Suas Credenciais de Acesso
+          <Lock className="w-5 h-5 text-indigo-600" /> Your Access Credentials
         </h2>
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-sm font-medium text-slate-500 uppercase">E-mail</span>
+            <span className="text-sm font-medium text-slate-500 uppercase">Email</span>
             <span className="text-lg font-mono font-semibold text-slate-900">{email}</span>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-sm font-medium text-slate-500 uppercase">Senha Temporária</span>
+            <span className="text-sm font-medium text-slate-500 uppercase">Temporary Password</span>
             <span className="text-lg font-mono font-semibold text-slate-900">{pwd}</span>
           </div>
         </div>
-        <p className="mt-4 text-xs text-slate-400 italic">* Guarde estas informações com cuidado. Você precisará delas para realizar o teste.</p>
+        <p className="mt-4 text-xs text-slate-400 italic">* Keep this information safe. You will need it to take the test.</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Link to="/login" className="inline-flex items-center justify-center px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all">
-          Ir para o Login <LogIn className="ml-2 w-5 h-5" />
+          Go to Login <LogIn className="ml-2 w-5 h-5" />
         </Link>
         <Link to="/" className="inline-flex items-center justify-center px-8 py-3 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all">
-          Voltar para Home
+          Back to Home
         </Link>
       </div>
     </div>

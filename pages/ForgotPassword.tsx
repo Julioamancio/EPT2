@@ -21,12 +21,12 @@ const ForgotPassword: React.FC = () => {
       if (user) {
         setMessage({
           type: 'success',
-          text: `Sucesso! Enviamos as instruções para ${email}. (Simulação: Sua senha atual é: ${user.password})`
+          text: `Success! We have sent instructions to ${email}. (Simulation: Your current password is: ${user.password})`
         });
       } else {
         setMessage({
           type: 'error',
-          text: 'E-mail não encontrado em nossa base de dados.'
+          text: 'Email not found in our database.'
         });
       }
       setLoading(false);
@@ -37,15 +37,15 @@ const ForgotPassword: React.FC = () => {
     <div className="max-w-md mx-auto px-4 py-20">
       <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
         <Link to="/login" className="inline-flex items-center text-sm text-slate-500 hover:text-indigo-600 mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Login
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
         </Link>
 
         <div className="text-center mb-8">
           <div className="bg-indigo-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Mail className="text-indigo-600 w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Recuperar Senha</h1>
-          <p className="text-slate-500 mt-2">Informe seu e-mail para receber as credenciais de acesso.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Recover Password</h1>
+          <p className="text-slate-500 mt-2">Enter your email to receive access credentials.</p>
         </div>
 
         {message && (
@@ -59,14 +59,14 @@ const ForgotPassword: React.FC = () => {
 
         <form onSubmit={handleReset} className="space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Seu E-mail de Cadastro</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Your Registered Email</label>
             <input 
               required
               type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              placeholder="exemplo@email.com"
+              placeholder="example@email.com"
             />
           </div>
           <button 
@@ -74,7 +74,7 @@ const ForgotPassword: React.FC = () => {
             disabled={loading}
             className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Recuperar Acesso'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Recover Access'}
           </button>
         </form>
       </div>
