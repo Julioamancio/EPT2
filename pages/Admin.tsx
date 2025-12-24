@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Edit3, X, 
   CheckCircle2, Sparkles, BrainCircuit, 
-  Loader2, ImageIcon, Filter,
+  Loader2, ImageIcon,
   ChevronDown, Music, Link as LinkIcon,
-  AlertTriangle, Check, ListChecks, Search, Copy,
-  ArrowUpDown, Award, Clock, FileText, Download, BarChart2
+  AlertTriangle, Search, Copy,
+  ArrowUpDown, Award, Clock, Download, BarChart2
 } from 'lucide-react';
 import { Question, ProficiencyLevel, SectionType, User } from '../types';
 import { storageService } from '../services/storageService';
@@ -31,7 +31,6 @@ const Admin: React.FC = () => {
   });
 
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const [urlError, setUrlError] = useState<string | null>(null);
   
   const [filterLevel, setFilterLevel] = useState<string>('ALL');
   const [rawContent, setRawContent] = useState('');
@@ -57,9 +56,10 @@ const Admin: React.FC = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    setCandidates(storageService.getUsers());
-    const s = storageService.getSettings();
+  const loadData = async () => {
+    const users = await storageService.getUsers();
+    setCandidates(users);
+    const s = await storageService.getSettings();
     setSettings(s);
     storageService.getQuestionsWithFallback().then(list => {
       setQuestions(list);
@@ -83,37 +83,16 @@ const Admin: React.FC = () => {
     }
   };
 
-  const persistQuestions = async (updatedQuestions: Question[], silentSuccess = false) => {
-    // 1. Save to LocalStorage (Always works)
-    storageService.saveQuestions(updatedQuestions);
-
-    // 2. Try to Save to Script (File System)
-    const ok = await storageService.saveQuestionsToScript(updatedQuestions);
-    
-    if (ok) {
-      if (!silentSuccess) alert('SUCESSO!\nArquivo "questions.json" atualizado.\nAgora faça o COMMIT e PUSH para o GitHub.');
-    } else {
-      // Fallback for Vercel/Production
-      const confirmed = window.confirm('ATENÇÃO (MODO ONLINE/VERCEL):\n\nO site não consegue escrever no arquivo "questions.json" automaticamente neste ambiente.\n\nDeseja BAIXAR o arquivo atualizado para fazer o upload manual?\n\n(Isso é necessário para que as alterações não se percam)');
-      
-      if (confirmed) {
-        const data = JSON.stringify(updatedQuestions, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'questions.json';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    }
+  const saveToCloud = async (updatedQuestions: Question[]) => {
+    // Single source of truth: Storage Service (which uses Supabase)
+    await storageService.saveQuestions(updatedQuestions);
   };
 
   const handleDeleteQuestion = (id: string) => {
     if (window.confirm('EXCLUIR REGISTRO? Esta ação removerá a questão permanentemente da base de dados.')) {
       setQuestions(prev => {
         const updated = prev.filter(q => q.id !== id);
-        persistQuestions(updated, true); // Persist with silent success
+        storageService.deleteQuestion(id); 
         return updated;
       });
     }
@@ -131,7 +110,7 @@ const Admin: React.FC = () => {
       const s = { ...settings, nextQuestionNumber: next + 1 };
       setSettings(s);
       storageService.saveSettings(s);
-      persistQuestions(updated, true);
+      saveToCloud(updated);
       return updated;
     });
   };
@@ -140,9 +119,12 @@ const Admin: React.FC = () => {
     const ids = Object.keys(selected).filter(k => selected[k]);
     if (ids.length === 0) return;
     if (!window.confirm(`Excluir ${ids.length} questões?`)) return;
+    
+    // Delete one by one in DB (could be optimized with deleteMany but keeping it simple)
+    ids.forEach(id => storageService.deleteQuestion(id));
+    
     setQuestions(prev => {
       const updated = prev.filter(q => !ids.includes(q.id));
-      persistQuestions(updated, true);
       setSelected({});
       return updated;
     });
@@ -150,9 +132,10 @@ const Admin: React.FC = () => {
 
   const handleDeleteAll = () => {
     if (!window.confirm('Excluir TODAS as questões?')) return;
-    const updated: Question[] = [];
-    persistQuestions(updated, true);
-    setQuestions(updated);
+    // In a real app we might not want to allow this easily on DB
+    questions.forEach(q => storageService.deleteQuestion(q.id));
+    
+    setQuestions([]);
     const s = { ...settings, nextQuestionNumber: 1 };
     setSettings(s);
     storageService.saveSettings(s);
@@ -162,7 +145,6 @@ const Admin: React.FC = () => {
   const handleSaveQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Determine updated list first
     let updatedQuestions: Question[] = [];
     
     if (editingQuestion) {
@@ -181,11 +163,8 @@ const Admin: React.FC = () => {
       storageService.saveSettings(s);
     }
     
-    // Update State
     setQuestions(updatedQuestions);
-    
-    // Save Definitive
-    await persistQuestions(updatedQuestions, true); // Silent success because modal closes
+    await saveToCloud(updatedQuestions);
 
     setShowModal(false);
     resetForm();
@@ -194,7 +173,6 @@ const Admin: React.FC = () => {
   const resetForm = () => {
     setFormData({ level: ProficiencyLevel.B2, section: SectionType.GRAMMAR, text: '', audioUrl: '', options: ['', '', '', ''], correctAnswer: 0 });
     setEditingQuestion(null);
-    setUrlError(null);
   };
 
   const handleSmartImport = async () => {
@@ -212,7 +190,7 @@ const Admin: React.FC = () => {
       for (let c = 0; c < chunks.length; c++) {
         let parsed: Question[] = [];
         if (aiProvider === 'gemini') {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
           const response = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: `Analise o texto e extraia questões em JSON.
@@ -256,7 +234,7 @@ const Admin: React.FC = () => {
           });
           parsed = JSON.parse(response.text || "[]") as Question[];
         } else {
-          const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true });
+          const client = new OpenAI({ apiKey: (import.meta as any).env.VITE_OPENAI_API_KEY, dangerouslyAllowBrowser: true });
           const prompt = `Gere questões CEFR (A1-C2). Responda APENAS JSON.
           Se for tarefa de Matching, crie um objeto com 'subQuestions' (array de {text, correctAnswerIndex}) e 'options' (lista de escolhas).
           Caso contrário, use o formato padrão.
@@ -276,22 +254,20 @@ const Admin: React.FC = () => {
           const section = Object.values(SectionType).includes(q.section as any) ? q.section : SectionType.GRAMMAR;
           
           if (q.subQuestions && Array.isArray(q.subQuestions) && q.subQuestions.length > 0) {
-             // Tratamento para Matching Questions
              aggregator.push({
                id: Math.random().toString(36).substr(2, 9),
                level: level as ProficiencyLevel,
                section: section as SectionType,
                text: q.text,
                options: q.options,
-               correctAnswer: 0, // Ignorado em matching
+               correctAnswer: 0,
                subQuestions: q.subQuestions.map(sq => ({
                  id: Math.random().toString(36).substr(2, 9),
                  text: sq.text,
-                 correctAnswer: typeof sq.correctAnswerIndex === 'number' ? sq.correctAnswerIndex : 0
+                 correctAnswer: typeof (sq as any).correctAnswerIndex === 'number' ? (sq as any).correctAnswerIndex : 0
                }))
              });
           } else {
-            // Tratamento Padrão
             const opts = Array.isArray(q.options) ? q.options.slice(0, 4) : [];
             while (opts.length < 4) opts.push(`Opção ${opts.length + 1}`);
             let idx = typeof (q as any).correctAnswerIndex === 'number' ? (q as any).correctAnswerIndex : (typeof (q as any).correctAnswer === 'number' ? (q as any).correctAnswer : 0);
@@ -322,8 +298,7 @@ const Admin: React.FC = () => {
       
       setQuestions(prev => {
         const updated = [...newQuestions, ...prev];
-        storageService.saveQuestions(updated);
-        storageService.saveQuestionsToScript(updated);
+        saveToCloud(updated);
         return updated;
       });
       
@@ -387,7 +362,7 @@ const Admin: React.FC = () => {
 
       let parsed: Question[] = [];
       if (aiProvider === 'gemini') {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
           const response = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: prompt,
@@ -395,7 +370,7 @@ const Admin: React.FC = () => {
           });
           parsed = JSON.parse(response.text || "[]");
       } else {
-          const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true });
+          const client = new OpenAI({ apiKey: (import.meta as any).env.VITE_OPENAI_API_KEY, dangerouslyAllowBrowser: true });
           const completion = await client.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
@@ -408,7 +383,6 @@ const Admin: React.FC = () => {
 
       const aggregator: Question[] = [];
       for (const q of parsed) {
-         // Normalização e ID
          const opts = Array.isArray(q.options) ? q.options.slice(0, 4) : [];
          while (opts.length < 4) opts.push(`Opção ${opts.length + 1}`);
          
@@ -436,7 +410,7 @@ const Admin: React.FC = () => {
           const start = settings.nextQuestionNumber || 1;
           const newQs = aggregator.map((q, i) => ({ ...q, number: start + i }));
           const updated = [...newQs, ...prev];
-          persistQuestions(updated, true); // Persist immediately
+          saveToCloud(updated);
           return updated;
         });
         const next = (settings.nextQuestionNumber || 1) + aggregator.length;
@@ -445,7 +419,7 @@ const Admin: React.FC = () => {
         storageService.saveSettings(s);
         
         setShowAiGeneratorModal(false);
-        setAiGenConfig({ ...aiGenConfig, topic: '' }); // Reset topic only
+        setAiGenConfig({ ...aiGenConfig, topic: '' }); 
         alert(`${aggregator.length} questões geradas e salvas com sucesso!`);
       } else {
         alert('Nenhuma questão foi gerada. Tente novamente.');
@@ -471,7 +445,6 @@ const Admin: React.FC = () => {
       case 'annual': startDate.setFullYear(now.getFullYear() - 1); break;
     }
 
-    // Considera data atual se não houver purchaseDate (migração de dados antigos)
     const filtered = candidates.filter(c => {
       const pDate = c.purchaseDate || Date.now();
       return pDate >= startDate.getTime();
@@ -479,7 +452,6 @@ const Admin: React.FC = () => {
     
     const totalRevenue = filtered.length * UNIFIED_EXAM_PRICE;
     
-    // Group by day/month for chart
     const chartData: Record<string, number> = {};
     filtered.forEach(c => {
       const date = new Date(c.purchaseDate || Date.now());
@@ -490,7 +462,7 @@ const Admin: React.FC = () => {
     return { filtered, totalRevenue, chartData };
   };
 
-  const handleUnlockCandidate = (email: string) => {
+  const handleUnlockCandidate = async (email: string) => {
     if (!window.confirm(`DESBLOQUEAR CANDIDATO?\n\nIsso permitirá que ${email} refaça a prova imediatamente, ignorando o período de carência.\n\nO histórico anterior (nota/reprovação) será limpo.`)) return;
 
     const updated = candidates.map(u => {
@@ -507,17 +479,16 @@ const Admin: React.FC = () => {
     });
     
     setCandidates(updated);
-    storageService.saveUsers(updated);
+    await storageService.saveUsers(updated);
     alert('Candidato desbloqueado com sucesso!');
   };
 
-  const handleResetSales = () => {
+  const handleResetSales = async () => {
     if (!window.confirm('ATENÇÃO: LIMPEZA TOTAL (RESET DE FÁBRICA)\n\nIsso EXCLUIRÁ PERMANENTEMENTE todos os candidatos registrados e o histórico financeiro.\n\nO sistema voltará ao estado inicial (sem alunos).\n\nDeseja continuar?')) return;
 
     const updated: User[] = [];
     setCandidates(updated);
-    storageService.saveUsers(updated);
-    // Força atualização da interface
+    await storageService.saveUsers(updated);
     window.location.reload();
   };
 
@@ -556,25 +527,6 @@ const Admin: React.FC = () => {
       return 0;
    });
 
-  const calculateBreakdown = (user: User) => {
-    // Note: This logic assumes we can reconstruct breakdown from history if available, 
-    // or it's a placeholder if not. Since we don't store individual question answers permanently in User,
-    // we might need to rely on what was saved in 'examHistory' or just show 'N/A' if not available.
-    // For now, let's check if 'examHistory' has the latest data.
-    
-    if (user.examHistory && user.examHistory.length > 0) {
-      const lastExam = user.examHistory[user.examHistory.length - 1];
-      if (lastExam.breakdown) return lastExam.breakdown;
-    }
-    
-    // Fallback: If we don't have breakdown stored, we can't accurately show it without re-calculating 
-    // from answers which are lost after exam. 
-    // In a real scenario, we should save breakdown in User object on exam completion.
-    // For this task, I will assume we update User interface to optionally hold 'lastExamBreakdown'.
-    
-    return { reading: 0, listening: 0, useOfEnglish: 0 }; 
-  };
-
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-24 font-inter">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -608,61 +560,6 @@ const Admin: React.FC = () => {
                 <button onClick={() => { const all = Object.fromEntries(questions.map(q => [q.id, true])); setSelected(all); }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Selecionar Todas</button>
                 <button onClick={handleDeleteSelected} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Excluir Selecionadas</button>
                 <button onClick={handleDeleteAll} className="px-4 py-2 rounded-[1rem] border border-red-200 bg-white text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 active:scale-95">Excluir Todas</button>
-                <button onClick={() => {
-                  const data = JSON.stringify(questions, null, 2);
-                  const blob = new Blob([data], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `questions-backup-${Date.now()}.json`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }} className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Exportar JSON</button>
-                <button onClick={async () => {
-                  if(!window.confirm('SALVAR NO SCRIPT (DEFINITIVO)?\n\nIsso irá sobrescrever o arquivo "questions.json" no servidor local com as questões que você está vendo agora.\n\nUse isso após adicionar/remover questões para garantir que elas fiquem salvas para sempre.')) return;
-                  
-                  const ok = await storageService.saveQuestionsToScript(questions);
-                  if (ok) {
-                    alert('SUCESSO!\nArquivo "questions.json" atualizado.\nAgora faça o COMMIT e PUSH para o GitHub.');
-                  } else {
-                    alert('ATENÇÃO (MODO VERCEL):\nO site não consegue salvar o arquivo automaticamente no servidor online.\n\nSOLUÇÃO:\n1. Clique em "Exportar JSON" ao lado.\n2. Renomeie o arquivo baixado para "questions.json".\n3. Substitua o arquivo na pasta "public/" do seu projeto.\n4. Suba para o GitHub.');
-                  }
-                }} className="px-4 py-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 active:scale-95">Salvar Definitivo</button>
-                <label className="px-4 py-2 rounded-[1rem] border border-slate-200 bg-white text-slate-600 text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95 cursor-pointer">
-                  Importar JSON
-                  <input type="file" accept="application/json" className="hidden" onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    const text = await f.text();
-                    let arr: Question[] = [];
-                    try { arr = JSON.parse(text); } catch {}
-                    const start = settings.nextQuestionNumber || 1;
-                    const prepared = (arr || []).map((q, i) => ({
-                      id: Math.random().toString(36).substr(2,9),
-                      number: start + i,
-                      level: q.level,
-                      section: q.section,
-                      text: q.text,
-                      audioUrl: q.audioUrl,
-                      options: Array.isArray(q.options) ? q.options.slice(0,4) : [],
-                      correctAnswer: typeof q.correctAnswer === 'number' ? Math.max(0, Math.min(3, q.correctAnswer)) : 0
-                    }));
-                    if (prepared.length) {
-                      setQuestions(prev => {
-                        const updated = [...prev, ...prepared];
-                        storageService.saveQuestions(updated);
-                        storageService.saveQuestionsToScript(updated);
-                        return updated;
-                      });
-                      const next = start + prepared.length;
-                      const s = { ...settings, nextQuestionNumber: next };
-                      setSettings(s);
-                      storageService.saveSettings(s);
-                      alert(`${prepared.length} questões importadas com sucesso!`);
-                    }
-                    e.target.value = '';
-                  }} />
-                </label>
               </div>
 
               {/* ROW 2: FILTERS & SEARCH (Full Width) */}
@@ -809,11 +706,7 @@ const Admin: React.FC = () => {
                     {isAiProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <BrainCircuit className="w-6 h-6" />}
                     {isAiProcessing ? 'Auditando Texto...' : `Gerar Questões via ${aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
                   </button>
-                  <div className="mt-4 flex items-center justify-center gap-3">
-                    <button onClick={async () => {
-                  await persistQuestions(questions, false);
-                }} className="px-6 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 active:scale-95">Salvar no Script (Definitivo)</button>
-                  </div>
+                  
                   {importTotal > 0 && (
                     <div className="mt-6 text-center">
                       <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
@@ -836,117 +729,119 @@ const Admin: React.FC = () => {
                    Total: {candidates.length} alunos
                 </div>
              </div>
-             <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b border-slate-100">
-                  <tr>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidato</th>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Pagamento</th>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Certificação</th>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Nível CEFR</th>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Breakdown (R/L/U)</th>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Desempenho</th>
-                    <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Auditoria</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {candidates.map(c => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 transition-all group">
-                      <td className="px-12 py-6">
-                        <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
-                              {c.fullName ? c.fullName.charAt(0) : c.email.charAt(0).toUpperCase()}
-                           </div>
-                           <div>
-                              <p className="text-sm font-bold text-slate-900">{c.fullName || 'Usuário'}</p>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{c.email}</p>
-                           </div>
-                        </div>
-                      </td>
-                      <td className="px-12 py-6">
-                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
-                           <CheckCircle2 className="w-3 h-3" /> Pago
-                        </span>
-                      </td>
-                      <td className="px-12 py-6">
-                        {c.certificateCode ? (
-                           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-bold uppercase tracking-widest">
-                              <Award className="w-3 h-3" /> Emitido
-                           </span>
-                        ) : c.examCompleted ? (
-                           <div className="flex flex-col items-start gap-2">
-                             <div className="flex items-center gap-2">
-                               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-[10px] font-bold uppercase tracking-widest">
-                                  <AlertTriangle className="w-3 h-3" /> Reprovado
-                               </span>
-                               <button 
-                                 onClick={() => handleUnlockCandidate(c.email)}
-                                 className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
-                                 title="Desbloquear para nova tentativa"
-                               >
-                                  <Sparkles className="w-3 h-3" />
-                               </button>
-                             </div>
-                             {c.failureReason && (
-                               <span className="text-[9px] font-bold text-red-400 uppercase tracking-tight max-w-[150px] leading-tight">
-                                 {c.failureReason}
-                               </span>
-                             )}
-                           </div>
-                        ) : (
-                           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-bold uppercase tracking-widest">
-                              <Clock className="w-3 h-3" /> Pendente
-                           </span>
-                        )}
-                      </td>
-                      <td className="px-12 py-6 text-center">
-                        {c.score !== undefined ? (
-                           <span className={`px-3 py-1 rounded-lg font-black text-xs ${c.score >= 85 ? 'bg-amber-100 text-amber-700' : c.score >= 60 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                             {c.score >= 85 ? 'C1' : c.score >= 60 ? 'B2' : 'Abaixo B2'}
-                           </span>
-                        ) : '--'}
-                      </td>
-                      <td className="px-12 py-6 text-center">
-                        {c.examHistory && c.examHistory.length > 0 && c.examHistory[c.examHistory.length - 1].breakdown ? (
-                           <div className="flex justify-center gap-2">
-                             <div title="Reading" className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-100">
-                               R: {c.examHistory[c.examHistory.length - 1].breakdown?.reading}%
-                             </div>
-                             <div title="Listening" className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-[10px] font-bold border border-purple-100">
-                               L: {c.examHistory[c.examHistory.length - 1].breakdown?.listening}%
-                             </div>
-                             <div title="Use of English" className="px-2 py-1 bg-teal-50 text-teal-700 rounded text-[10px] font-bold border border-teal-100">
-                               U: {c.examHistory[c.examHistory.length - 1].breakdown?.useOfEnglish}%
-                             </div>
-                           </div>
-                        ) : (
-                           <span className="text-[10px] font-bold text-slate-300">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-12 py-6 text-right">
-                        {c.score !== undefined ? (
-                           <span className="text-xl font-black text-slate-900">{c.score}%</span>
-                        ) : (
-                           <span className="text-slate-300 font-bold text-xs">--</span>
-                        )}
-                      </td>
-                      <td className="px-12 py-6 text-right">
-                        {c.screenshots && c.screenshots.length > 0 ? (
-                          <div className="flex justify-end gap-1">
-                            {c.screenshots.slice(0, 3).map((shot, i) => (
-                              <img key={i} src={shot} alt="Evidência" className="w-12 h-8 object-cover rounded border border-slate-200 hover:scale-150 transition-transform cursor-zoom-in" onClick={() => window.open(shot, '_blank')} />
-                            ))}
-                            {c.screenshots.length > 3 && (
-                              <span className="w-8 h-8 flex items-center justify-center bg-slate-100 text-[9px] font-bold text-slate-500 rounded border border-slate-200">+{c.screenshots.length - 3}</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Sem registros</span>
-                        )}
-                      </td>
+             <div className="overflow-x-auto">
+               <table className="w-full text-left min-w-[900px]">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidato</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Pagamento</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Certificação</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Nível CEFR</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Breakdown (R/L/U)</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Desempenho</th>
+                      <th className="px-12 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Auditoria</th>
                     </tr>
-                  ))}
-                </tbody>
-             </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {candidates.map(c => (
+                      <tr key={c.id} className="hover:bg-slate-50/50 transition-all group">
+                        <td className="px-12 py-6">
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
+                                {c.fullName ? c.fullName.charAt(0) : c.email.charAt(0).toUpperCase()}
+                             </div>
+                             <div>
+                                <p className="text-sm font-bold text-slate-900">{c.fullName || 'Usuário'}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{c.email}</p>
+                             </div>
+                          </div>
+                        </td>
+                        <td className="px-12 py-6">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
+                             <CheckCircle2 className="w-3 h-3" /> Pago
+                          </span>
+                        </td>
+                        <td className="px-12 py-6">
+                          {c.certificateCode ? (
+                             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-bold uppercase tracking-widest">
+                                <Award className="w-3 h-3" /> Emitido
+                             </span>
+                          ) : c.examCompleted ? (
+                             <div className="flex flex-col items-start gap-2">
+                               <div className="flex items-center gap-2">
+                                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-[10px] font-bold uppercase tracking-widest">
+                                    <AlertTriangle className="w-3 h-3" /> Reprovado
+                                 </span>
+                                 <button 
+                                   onClick={() => handleUnlockCandidate(c.email)}
+                                   className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                                   title="Desbloquear para nova tentativa"
+                                 >
+                                    <Sparkles className="w-3 h-3" />
+                                 </button>
+                               </div>
+                               {c.failureReason && (
+                                 <span className="text-[9px] font-bold text-red-400 uppercase tracking-tight max-w-[150px] leading-tight">
+                                   {c.failureReason}
+                                 </span>
+                               )}
+                             </div>
+                          ) : (
+                             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-bold uppercase tracking-widest">
+                                <Clock className="w-3 h-3" /> Pendente
+                             </span>
+                          )}
+                        </td>
+                        <td className="px-12 py-6 text-center">
+                          {c.score !== undefined ? (
+                             <span className={`px-3 py-1 rounded-lg font-black text-xs ${c.score >= 85 ? 'bg-amber-100 text-amber-700' : c.score >= 60 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                               {c.score >= 85 ? 'C1' : c.score >= 60 ? 'B2' : 'Abaixo B2'}
+                             </span>
+                          ) : '--'}
+                        </td>
+                        <td className="px-12 py-6 text-center">
+                          {c.examHistory && c.examHistory.length > 0 && c.examHistory[c.examHistory.length - 1].breakdown ? (
+                             <div className="flex justify-center gap-2">
+                               <div title="Reading" className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-100">
+                                 R: {c.examHistory[c.examHistory.length - 1].breakdown?.reading}%
+                               </div>
+                               <div title="Listening" className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-[10px] font-bold border border-purple-100">
+                                 L: {c.examHistory[c.examHistory.length - 1].breakdown?.listening}%
+                               </div>
+                               <div title="Use of English" className="px-2 py-1 bg-teal-50 text-teal-700 rounded text-[10px] font-bold border border-teal-100">
+                                 U: {c.examHistory[c.examHistory.length - 1].breakdown?.useOfEnglish}%
+                               </div>
+                             </div>
+                          ) : (
+                             <span className="text-[10px] font-bold text-slate-300">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-12 py-6 text-right">
+                          {c.score !== undefined ? (
+                             <span className="text-xl font-black text-slate-900">{c.score}%</span>
+                          ) : (
+                             <span className="text-slate-300 font-bold text-xs">--</span>
+                          )}
+                        </td>
+                        <td className="px-12 py-6 text-right">
+                          {c.screenshots && c.screenshots.length > 0 ? (
+                            <div className="flex justify-end gap-1">
+                              {c.screenshots.slice(0, 3).map((shot, i) => (
+                                <img key={i} src={shot} alt="Evidência" className="w-12 h-8 object-cover rounded border border-slate-200 hover:scale-150 transition-transform cursor-zoom-in" onClick={() => window.open(shot, '_blank')} />
+                              ))}
+                              {c.screenshots.length > 3 && (
+                                <span className="w-8 h-8 flex items-center justify-center bg-slate-100 text-[9px] font-bold text-slate-500 rounded border border-slate-200">+{c.screenshots.length - 3}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Sem registros</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+               </table>
+             </div>
           </div>
         )}
 

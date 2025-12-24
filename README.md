@@ -1,48 +1,68 @@
-# English Proficiency Certificates - Guia de Testes
+# English Proficiency Certificates (EPT)
 
-Esta plataforma permite a certificação de proficiência em inglês (B2 e C1) com correção automática e gestão administrativa.
+Plataforma completa para certificação de proficiência em inglês (níveis CEFR A1 a C2), com correção automática, geração de certificados verificáveis e painel administrativo avançado com Inteligência Artificial e Banco de Dados Real.
 
-## 🚀 Credenciais de Acesso
+## 🚀 Acesso Rápido
 
-### 1. Painel Administrativo
-Para gerenciar questões, níveis e seções do exame:
+### 1. Painel Administrativo (Gestão)
+Para criar provas, gerenciar alunos e finanças:
+- **URL:** `/admin/login`
+- **Usuário:** `admin`
+- **Senha:** `admin123*`
 
-
-> **Nota de Segurança:** O painel possui um timeout de inatividade de 15 minutos. Após este período, você será deslogado automaticamente.
-
-### 2. Candidato (Fluxo de Teste)
-Como o sistema utiliza `localStorage` para persistência, os usuários são criados dinamicamente durante o fluxo de compra.
-
-**Para testar sem precisar "comprar":**
-1. Acesse a página **Preços** (`/comprar`).
-2. Insira qualquer e-mail (ex: `candidato@teste.com`).
-3. Selecione o nível (B2 ou C1).
-4. Na tela de sucesso, **copie a senha temporária** gerada pelo sistema.
-5. Use essas credenciais na tela de **Login Candidato** (`/login`).
+### 2. Candidato (Área do Aluno)
+Para realizar exames e obter certificações:
+- **URL:** `/login` ou `/comprar`
+- **Fluxo de Teste:** Ao "comprar" um exame (modo teste), o sistema gera credenciais automáticas (E-mail/Senha) para acesso imediato.
 
 ---
 
-## 🛠️ Funcionalidades Implementadas
+## 🛠️ Funcionalidades Principais
 
-### Candidato
-- **Compra Simulada:** Registro de interesse e geração de credenciais.
-- **Exame Dinâmico:** Cronômetro de 60 minutos, navegação entre questões e salvamento de progresso local.
-- **Resultado Instantâneo:** Cálculo de nota imediato (aprovação >= 60%).
-- **Certificação:** Geração de código hash único e visualização de certificado para aprovados.
-- **Validação Pública:** Qualquer pessoa pode validar um certificado usando o código hash em `/verificar`.
+### 🎓 Para o Candidato
+*   **Exame Adaptativo:** Interface limpa e focada, com cronômetro de 60 minutos e salvamento automático de progresso.
+*   **Correção Instantânea:** Algoritmo de avaliação imediata com cálculo de score baseado no CEFR.
+*   **Certificado Digital:** Geração de certificado em alta resolução com **Código Hash Único** para validação antifraude.
+*   **Histórico de Provas:** Visualização detalhada de tentativas anteriores e breakdown de notas por competência (Reading, Listening, Use of English).
+*   **Validação Pública:** Qualquer recrutador pode validar a autenticidade do certificado em `/verificar` usando o código hash.
 
-### Administrador
-- **Dashboard Executivo:** Visão geral da base de questões.
-- **CRUD de Questões:** Criar, editar e excluir questões para os níveis B2 e C1.
-- **Filtros Avançados:** Busca por texto, nível ou seção (Reading, Grammar, etc).
-- **Segurança:** Monitoramento de inatividade e proteção de rotas.
+### 🏢 Painel Administrativo (Admin)
+*   **Gestão de Questões (CRUD):** Crie, edite, duplique e exclua questões manualmente. Tudo salvo instantaneamente no **Supabase**.
+*   **Geração via IA (Novo):** Crie provas inteiras automaticamente usando **Gemini** ou **OpenAI**.
+    *   *Reading:* Gera textos acadêmicos/profissionais completos com perguntas contextuais.
+    *   *Listening:* Cria transcrições de diálogos realistas.
+    *   *Use of English:* Foca em gramática avançada e collocations.
+*   **Importação Inteligente:** Cole qualquer texto bruto (artigo, notícia) e a IA extrai questões formatadas automaticamente.
+*   **Gestão Financeira:** Dashboard com receita total, vendas por período e ticket médio.
+*   **Controle de Alunos:** Visualize status de pagamento, notas, reprovações e desbloqueie novas tentativas para candidatos.
+*   **Persistência Real:** Banco de dados PostgreSQL (Supabase) para segurança e escalabilidade.
 
-## 💻 Tecnologias
-- **Frontend:** React 19 + TypeScript.
-- **Estilização:** Tailwind CSS (Estética Oxford Executive).
-- **Ícones:** Lucide React.
-- **Roteamento:** React Router Dom 7.
-- **Persistência:** LocalStorage (Simulando banco de dados para demo).
+---
+
+## 💻 Tecnologias Utilizadas
+
+*   **Frontend:** React 19 + TypeScript (Vite).
+*   **Backend / DB:** Supabase (PostgreSQL + RLS).
+*   **Estilização:** Tailwind CSS (Design System "Oxford Executive").
+*   **IA & NLP:** Integração com Google Gemini e OpenAI para geração de conteúdo.
+*   **Ícones:** Lucide React.
+*   **Pagamentos:** Integração simulada com Stripe (Link de Pagamento).
+
+---
+
+## 📝 Guia de Desenvolvimento
+
+### Instalação
+1.  Clone o repositório.
+2.  Crie um arquivo `.env.local` com suas chaves do Supabase e Gemini.
+3.  Instale e rode:
+```bash
+npm install
+npm run dev
+```
+
+### Banco de Dados
+O projeto utiliza Supabase. As migrações estão na pasta `supabase/migrations`.
 
 ---
 *Desenvolvido para excelência acadêmica e integridade em certificações.*
