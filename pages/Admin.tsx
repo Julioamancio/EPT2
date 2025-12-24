@@ -770,8 +770,12 @@ const Admin: React.FC = () => {
                   <div className="mt-4 flex items-center justify-center gap-3">
                     <button onClick={async () => {
                       const ok = await storageService.saveQuestionsToScript(questions);
-                      alert(ok ? 'Base salva no script (questions.json).' : 'Falha ao salvar no script. Use o servidor de desenvolvimento.');
-                    }} className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Salvar no Script</button>
+                      if (ok) {
+                        alert('SUCESSO!\n\nO arquivo "questions.json" foi atualizado na sua pasta local.\n\nAGORA VOCÊ DEVE:\n1. Fazer o Commit dessas alterações.\n2. Dar Push para o GitHub.\n\nO Vercel irá reconstruir o site com as novas questões automaticamente.');
+                      } else {
+                        alert('FALHA AO SALVAR!\n\nO servidor de desenvolvimento não está rodando ou não respondeu.\n\nIMPORTANTE: Você só consegue salvar permanentemente se estiver rodando o site LOCALMENTE (localhost).\n\nSe você está no site online (Vercel), as alterações NÃO serão salvas no servidor.');
+                      }
+                    }} className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95">Salvar no Script (Definitivo)</button>
                   </div>
                   {importTotal > 0 && (
                     <div className="mt-6 text-center">

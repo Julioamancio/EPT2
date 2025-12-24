@@ -1,5 +1,5 @@
 
-import { User, Certificate, Question, Coupon } from '../types';
+import { User, Certificate, Question } from '../types';
 import { INITIAL_QUESTIONS } from '../constants';
 
 const KEYS = {
@@ -11,6 +11,13 @@ const KEYS = {
 };
 
 export const storageService = {
+  getCoupons: (): Coupon[] => {
+    const data = localStorage.getItem(KEYS.COUPONS);
+    return data ? JSON.parse(data) : [];
+  },
+  saveCoupons: (coupons: Coupon[]) => {
+    localStorage.setItem(KEYS.COUPONS, JSON.stringify(coupons));
+  },
   getUsers: (): User[] => {
     const data = localStorage.getItem(KEYS.USERS);
     return data ? JSON.parse(data) : [];
