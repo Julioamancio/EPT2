@@ -1,0 +1,9 @@
+
+{
+  "name": "English Proficiency Certificates",
+  "description": "Plataforma líder em certificação de proficiência em inglês nos níveis B2 e C1, com verificação de autenticidade instantânea.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
